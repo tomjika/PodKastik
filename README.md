@@ -5,6 +5,8 @@
 
 *A Qt C++ app using [youtube-dl](https://github.com/ytdl-org/youtube-dl/blob/master/README.md#options) and [ffmpeg](https://ffmpeg.org/documentation.html)* (.exe required), for Windows (hopefully not for long)
 
+![Look!](/src/screenshot.PNG?raw=true "Screenshot")
+
 ### Functionalities ###
 Download audio file from link in clipboard ( *youtube-dl -x --playlist-items 1 [link] --restrict-filenames -o [output-path]/%(title)s.%(ext)s* )
 
@@ -25,6 +27,4 @@ Conversion only by selecting a file
 Video download (no conversion)
 
 Output directory, speed and resample values are remembered
-
-![Look!](/src/screenshot.PNG?raw=true "Screenshot")
 
