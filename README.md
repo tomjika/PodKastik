@@ -26,4 +26,5 @@ Video download (no conversion)
 
 Output directory, speed and resample values are remembered
 
-![Look!](/src/screenshot.PNGraw=true "Screenshot")
+![Look!](/src/screenshot.PNG?raw=true "Screenshot")
+
