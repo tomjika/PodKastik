@@ -293,7 +293,7 @@
     <string>Youtube-dl path</string>
    </property>
    <property name="text">
-    <string>FFMPEG Exe:</string>
+    <string>FFmpeg Exe:</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pb_convert">

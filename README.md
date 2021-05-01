@@ -3,7 +3,7 @@
 
 **For podcast consumers who needs them in faster, louder, lighter to listen on old devices.**
 
-*A Qt C++ app using [youtube-dl](https://github.com/ytdl-org/youtube-dl/blob/master/README.md#options) and [ffmpeg](https://ffmpeg.org/documentation.html)* (.exe required), for Windows (hopefully not for long)
+*A Qt C++ app using [youtube-dl](https://github.com/ytdl-org/youtube-dl/blob/master/README.md#options) and [FFmpeg](https://ffmpeg.org/documentation.html)* (.exe required), for Windows (hopefully not for long)
 
 ![Look!](/src/screenshot.PNG?raw=true "Screenshot")
 
@@ -28,3 +28,6 @@ Video download (no conversion)
 
 Output directory, speed and resample values are remembered
 
+
+#### EULA ####
+This software uses libraries from the FFmpeg project under the LGPLv2.1

@@ -48,7 +48,7 @@ void PodKastik::loadSettings()
     youtube_dl->setProgram(ytdl_folder);
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
-    ui->pb_browse_ffmpeg->setText("FFMPEG Exe: "+ffmpeg_folder);
+    ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
     ffmpeg->setProgram(ffmpeg_folder);
 
     speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
@@ -146,7 +146,7 @@ void PodKastik::ytdl_finished(int code, QProcess::ExitStatus state)
 }
 
 /******************************************************************************************/
-/*********************** FFMPEG ***********************************************************/
+/*********************** FFmpeg ***********************************************************/
 /******************************************************************************************/
 void PodKastik::ffmpeg_process_out()
 {bool ok;
@@ -189,7 +189,7 @@ void PodKastik::ffmpeg_process_err()
     if(ffmpeg->waitForReadyRead(300))
         out_str = ffmpeg->readAllStandardError();
     out_str = out_str.simplified();
-    qDebug()<<"FFMPEG_ERR:"<<out_str;
+    qDebug()<<"FFmpeg_ERR:"<<out_str;
     QRegularExpression sep("[:.]");
     if(out_str.contains("Duration"))
     {
@@ -288,7 +288,7 @@ void PodKastik::on_pb_browse_ytdl_clicked()
 void PodKastik::on_pb_browse_ffmpeg_clicked()
 {
     ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)");
-    ui->pb_browse_ffmpeg->setText("FFMPEG Exe: "+ffmpeg_folder);
+    ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
     ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
     saveSettings();
 }
