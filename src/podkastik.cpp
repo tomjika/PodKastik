@@ -48,7 +48,7 @@ void PodKastik::loadSettings()
     youtube_dl->setProgram(ytdl_folder);
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
-    ui->pb_browse_ffmpeg->setText("ffmpeg Exe: "+ffmpeg_folder);
+    ui->pb_browse_ffmpeg->setText("FFMPEG Exe: "+ffmpeg_folder);
     ffmpeg->setProgram(ffmpeg_folder);
 
     speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
@@ -280,15 +280,15 @@ void PodKastik::on_pb_browse_default_clicked()
 }
 void PodKastik::on_pb_browse_ytdl_clicked()
 {
-    ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder);
-    ui->pb_browse_ytdl->setText("Exe: "+ytdl_folder);
+    ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)");
+    ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
     ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
     saveSettings();
 }
 void PodKastik::on_pb_browse_ffmpeg_clicked()
 {
-    ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder);
-    ui->pb_browse_ffmpeg->setText("Exe: "+ffmpeg_folder);
+    ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)");
+    ui->pb_browse_ffmpeg->setText("FFMPEG Exe: "+ffmpeg_folder);
     ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
     saveSettings();
 }

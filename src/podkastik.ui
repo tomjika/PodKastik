@@ -293,7 +293,7 @@
     <string>Youtube-dl path</string>
    </property>
    <property name="text">
-    <string>ffmpeg Exe:</string>
+    <string>FFMPEG Exe:</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pb_convert">
@@ -369,7 +369,7 @@
      <x>10</x>
      <y>170</y>
      <width>281</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
