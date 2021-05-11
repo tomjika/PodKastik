@@ -13,12 +13,15 @@ PodKastik::PodKastik(QWidget *parent) :
     dl_link = clipboard->text();
     clip_paste();
 
-    youtube_dl = new QProcess();
-        connect(youtube_dl, SIGNAL(readyReadStandardOutput()), this, SLOT(ytdl_process_out()));
-        connect(youtube_dl, SIGNAL(readyReadStandardError()), this, SLOT(ytdl_process_err()));
-        connect(youtube_dl, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(ytdl_state_changed(QProcess::ProcessState)));
-        connect(youtube_dl, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(ytdl_error_state(QProcess::ProcessError)));
-        connect(youtube_dl, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(ytdl_finished(int, QProcess::ExitStatus)));
+    QSettings my_settings("Studio1656", "PodKastik", this);
+    ytdl_folder = my_settings.value("ytdl_folder").toString();
+    ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
+    youtube_dl = new youtubedl_process(this, ytdl_folder);
+        connect(youtube_dl, SIGNAL(process_ready()), this, SLOT(loadSettings()));
+        //connect(youtube_dl, SIGNAL(readyReadStandardOutput()), this, SLOT(ytdl_process_out()));
+        connect(youtube_dl, SIGNAL(log(QString)), this, SLOT(logging(QString)));
+        connect(youtube_dl, SIGNAL(process_state(QProcess::ProcessState)), this, SLOT(ytdl_state_changed(QProcess::ProcessState)));
+        //connect(youtube_dl, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(ytdl_finished(int, QProcess::ExitStatus)));
 
     ffmpeg = new QProcess();
         connect(ffmpeg, SIGNAL(readyReadStandardOutput()), this, SLOT(ffmpeg_process_out()));
@@ -43,13 +46,18 @@ void PodKastik::loadSettings()
     ui->pb_browse_default->setText("Default: "+default_folder);
     ui->pb_browse->setText("Output path: "+default_folder);
 
-    ytdl_folder = my_settings.value("ytdl_folder").toString();
-    ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
-    youtube_dl->setProgram(ytdl_folder);
+    if(youtube_dl->ytdl_available)
+    {
+        ui->pb_browse_ytdl->setText(youtube_dl->use_portable ? "YT-dl Exe: "+ytdl_folder : "Youtube-dl is installed");
+        ui->pb_browse_ytdl->setToolTip("Version: "+youtube_dl->version);
+    }else ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
     ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
     ffmpeg->setProgram(ffmpeg_folder);
+    if(!ffmpeg->startDetached()){}
+        //QMessageBox::critical(this, "FFmpeg not found", "FFmpeg not found", QMessageBox::Ok);
+    else ffmpeg->terminate();
 
     speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ui->dsb_tempo->setValue(speed_tempo);
@@ -82,7 +90,7 @@ void PodKastik::ytdl_process_out()
 {bool ok;
     QByteArray out_str;
     //if(youtube_dl->waitForReadyRead(30000))
-        out_str = youtube_dl->readAllStandardOutput();
+        //out_str = youtube_dl->readAllStandardOutput();
     out_str = out_str.simplified();
     qDebug()<<"ytdl_out"<<out_str;
     if(out_str.contains("[download]"))
@@ -102,17 +110,6 @@ void PodKastik::ytdl_process_out()
         ui->pb_progress->setFormat("Downloading...");
     }else ui->te_log->appendPlainText(out_str.trimmed());
 }
-void PodKastik::ytdl_process_err()
-{
-    QByteArray out_str;
-    //if(youtube_dl->waitForReadyRead(30000))
-        out_str = youtube_dl->readAllStandardError();
-    out_str = out_str.simplified();
-    qDebug()<<"ytdl_err"<<out_str;
-    ui->te_log->appendPlainText(out_str.trimmed());
-    if(out_str.contains("ERROR:")) QMessageBox::information(this, "ERROR", out_str, QMessageBox::Ok);
-}
-void PodKastik::ytdl_error_state(QProcess::ProcessError err){qDebug()<<"ytdl_err_state"<<err;}
 void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 {
     switch(s){
@@ -135,8 +132,8 @@ void PodKastik::do_ytdl()
     args<<"--restrict-filenames";
     args<<"-o";
     args<<output_path+"/%(title)s.%(ext)s";
-    youtube_dl->setArguments(args);
-    youtube_dl->start(QIODevice::ReadWrite);
+    //youtube_dl->setArguments(args);
+    //youtube_dl->start(QIODevice::ReadWrite);
 }
 void PodKastik::ytdl_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ytdl_FINISHED"<<code<<state;
@@ -251,7 +248,7 @@ void PodKastik::on_pb_download_clicked()
     ui->pb_progress->setValue(0);
     ui->pb_progress->setFormat("...");
     ui->l_output->setText("--"); this->setWindowTitle("PodKastik | "+ui->l_output->text());
-    if(youtube_dl->state() == QProcess::Running){youtube_dl->kill(); return;}
+    //if(youtube_dl->state() == QProcess::Running){youtube_dl->kill(); return;}
     do_ytdl();
 }
 void PodKastik::on_pb_convert_clicked()
@@ -280,14 +277,16 @@ void PodKastik::on_pb_browse_default_clicked()
 }
 void PodKastik::on_pb_browse_ytdl_clicked()
 {
-    ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)");
+    QString str = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)");
+    if(!str.isNull()) ytdl_folder = str;
     ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
     ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
     saveSettings();
 }
 void PodKastik::on_pb_browse_ffmpeg_clicked()
 {
-    ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)");
+    QString str = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)");
+    if(!str.isNull()) ffmpeg_folder = str;
     ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
     ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
     saveSettings();
@@ -322,6 +321,10 @@ void PodKastik::on_pb_open_output_path_clicked()
 /******************************************************************************************/
 /*********************** OTHERS ***********************************************************/
 /******************************************************************************************/
+void PodKastik::logging(QString str)
+{
+    ui->te_log->appendPlainText(str.trimmed());
+}
 void PodKastik::clip_paste(){ui->pb_download->setToolTip(clipboard->text());}
 bool PodKastik::urlExists(QString url_string)
 {

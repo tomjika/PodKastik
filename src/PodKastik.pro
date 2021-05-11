@@ -30,10 +30,12 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        podkastik.cpp
+        podkastik.cpp \
+        youtubedl_process.cpp
 
 HEADERS += \
-        podkastik.h
+        podkastik.h \
+        youtubedl_process.h
 
 FORMS += \
         podkastik.ui

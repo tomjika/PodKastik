@@ -12,6 +12,7 @@
 #include <QTcpSocket>
 #include <QRegularExpression>
 #include <QDesktopServices>
+#include "youtubedl_process.h"
 
 namespace Ui {
 class PodKastik;
@@ -28,7 +29,8 @@ public:
 private:
     Ui::PodKastik *ui;
 
-    QProcess *youtube_dl;
+    //QProcess *youtube_dl;
+    youtubedl_process *youtube_dl;
     QProcess *ffmpeg;
     QString output_path;
     double dl_progress;
@@ -54,9 +56,7 @@ private slots:
     void loadSettings();
     void saveSettings();
     void ytdl_process_out();
-    void ytdl_process_err();
     void ytdl_state_changed(QProcess::ProcessState);
-    void ytdl_error_state(QProcess::ProcessError);
     void ytdl_finished(int, QProcess::ExitStatus);
     void ffmpeg_process_out();
     void ffmpeg_process_err();
@@ -82,6 +82,7 @@ private slots:
     void on_rb_video_toggled(bool checked);
     void on_pb_select_file_to_convert_clicked();
     void on_pb_open_output_path_clicked();
+    void logging(QString);
 };
 
 #endif // PODKASTIK_H
