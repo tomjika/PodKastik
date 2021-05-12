@@ -15,6 +15,7 @@ class youtubedl_process : public QWidget
 public:
     explicit youtubedl_process(QWidget *parent = nullptr, QString p = "");
     ~youtubedl_process();
+    void exe_process(QStringList);
 
 private slots:
     void ytdl_process_out();
@@ -22,7 +23,6 @@ private slots:
     void ytdl_state_changed(QProcess::ProcessState);
     void ytdl_error_state(QProcess::ProcessError);
     void ytdl_finished(int, QProcess::ExitStatus);
-    void do_ytdl();
 
 public:
     QProcess *ytdl_process;
@@ -30,11 +30,17 @@ public:
     bool use_portable = false;
     QString exe_path;
     bool ytdl_available = false;
+    QString current_file_path_name;
+    QString current_file_name;
+    QString advance_status;
+    double dl_progress;
 
 signals:
-    process_ready();
-    process_state(QProcess::ProcessState);
-    log(QString);
+    void process_ready();
+    void process_state(QProcess::ProcessState);
+    void ytdl_process_ended();
+    void log(QString);
+    void process_out_update();
 };
 
 #endif // YOUTUBEDL_PROCESS_H

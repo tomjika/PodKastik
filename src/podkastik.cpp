@@ -18,10 +18,10 @@ PodKastik::PodKastik(QWidget *parent) :
     ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
     youtube_dl = new youtubedl_process(this, ytdl_folder);
         connect(youtube_dl, SIGNAL(process_ready()), this, SLOT(loadSettings()));
-        //connect(youtube_dl, SIGNAL(readyReadStandardOutput()), this, SLOT(ytdl_process_out()));
+        connect(youtube_dl, SIGNAL(process_out_update()), this, SLOT(ytdl_process_out()));
         connect(youtube_dl, SIGNAL(log(QString)), this, SLOT(logging(QString)));
         connect(youtube_dl, SIGNAL(process_state(QProcess::ProcessState)), this, SLOT(ytdl_state_changed(QProcess::ProcessState)));
-        //connect(youtube_dl, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(ytdl_finished(int, QProcess::ExitStatus)));
+        connect(youtube_dl, SIGNAL(ytdl_process_ended()), this, SLOT(ytdl_finished()));
 
     ffmpeg = new QProcess();
         connect(ffmpeg, SIGNAL(readyReadStandardOutput()), this, SLOT(ffmpeg_process_out()));
@@ -87,28 +87,18 @@ void PodKastik::saveSettings()
 /*********************** YOUTUBE-DL********************************************************/
 /******************************************************************************************/
 void PodKastik::ytdl_process_out()
-{bool ok;
-    QByteArray out_str;
-    //if(youtube_dl->waitForReadyRead(30000))
-        //out_str = youtube_dl->readAllStandardOutput();
-    out_str = out_str.simplified();
-    qDebug()<<"ytdl_out"<<out_str;
-    if(out_str.contains("[download]"))
-    {//[download]  37.4% of 2.67MiB at 844.71KiB/s ETA 00:02
-        if(out_str.contains("Destination")){
-            current_file_name = QString::fromLocal8Bit(out_str.replace("[download] Destination: ", 0).trimmed());
-            ui->l_current_file_name->setText(current_file_name.right(current_file_name.size()-current_file_name.lastIndexOf('\\')-1));
-        qDebug()<<"current_file_name"<<current_file_name;}
-        if(out_str.contains(" has already been downloaded")){
-            current_file_name = QString::fromLocal8Bit(out_str.replace("[download] ", 0).replace(" has already been downloaded", 0).trimmed());
-            ui->l_current_file_name->setText(current_file_name.right(current_file_name.size()-current_file_name.lastIndexOf('\\')-1));
-            return;
-        }
-        ui->l_output->setText(out_str.replace("[download] ", 0).trimmed());
-        ui->pb_progress->setValue(out_str.left(out_str.indexOf("%")).toDouble(&ok));
-        this->setWindowTitle("PodKastik | DL: "+out_str.left(out_str.indexOf("%"))+"%");
-        ui->pb_progress->setFormat("Downloading...");
-    }else ui->te_log->appendPlainText(out_str.trimmed());
+{
+    ui->l_current_file_name->setText(youtube_dl->current_file_name);
+    ui->l_output->setText(youtube_dl->advance_status);
+    ui->pb_progress->setValue(youtube_dl->dl_progress);
+    this->setWindowTitle("PodKastik | DL: "+QString::number(youtube_dl->dl_progress)+"%");
+    ui->pb_progress->setFormat("Downloading...");
+
+    if(youtube_dl->dl_progress == 100
+       && youtube_dl->ytdl_process->waitForFinished()
+       && ui->cb_then->isEnabled()
+       && ui->cb_then->isChecked())
+        ui->pb_convert->click();
 }
 void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 {
@@ -132,14 +122,13 @@ void PodKastik::do_ytdl()
     args<<"--restrict-filenames";
     args<<"-o";
     args<<output_path+"/%(title)s.%(ext)s";
-    //youtube_dl->setArguments(args);
-    //youtube_dl->start(QIODevice::ReadWrite);
-}
-void PodKastik::ytdl_finished(int code, QProcess::ExitStatus state)
-{qDebug()<<"ytdl_FINISHED"<<code<<state;
 
-    //qDebug()<<"RENAME"<<QFile(current_file_name).isOpen()<<QFile::rename(current_file_name, current_file_name.insert(current_file_name.lastIndexOf('.'), 'X'));
-    if(ui->cb_then->isEnabled() && ui->cb_then->isChecked())ui->pb_convert->click();
+    youtube_dl->exe_process(args);
+}
+void PodKastik::ytdl_finished()
+{
+    /*if(ui->cb_then->isEnabled() && ui->cb_then->isChecked())
+        ui->pb_convert->click();*/
 }
 
 /******************************************************************************************/
@@ -212,15 +201,15 @@ void PodKastik::ffmpeg_state_changed(QProcess::ProcessState s)
 void PodKastik::do_ffmpeg()
 {//sox -S -t mp3 -b 64 "$i" ./$fn2"X.mp3" channels 1 tempo $tmpo (S: show progress, t: filetype, -b: bitrate,
     //ffmpeg->setProgram(ffmpeg_folder);
-    output_file_name = current_file_name;
+    output_file_name = youtube_dl->current_file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
-    qDebug()<<"current_file_name EXISTS"<<QFile::exists(current_file_name);
+    qDebug()<<"current_file_name EXISTS"<<QFile::exists(youtube_dl->current_file_path_name);
     QStringList args;
     args<<"-progress"<<"pipe:1";
     args<<"-loglevel"<<"32";
     args<<"-y";//overwrite
     args<<"-i";
-    args<<current_file_name;
+    args<<youtube_dl->current_file_path_name;
     args<<"-ac"<<(stereo_to_mono ? "1" : "2");
     args<<"-ab"<<QString::number(to_kbit, 'f', 0).append("k");
     args<<"-acodec"<<"mp3";
@@ -232,7 +221,7 @@ void PodKastik::do_ffmpeg()
 }
 void PodKastik::ffmpeg_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ffmpeg_FINISHED"<<code<<state;
-    qDebug()<<"REMOVE"<<current_file_name<<QFile::remove(current_file_name);
+    qDebug()<<"REMOVE"<<youtube_dl->current_file_path_name<<QFile::remove(youtube_dl->current_file_path_name);
     QString new_name = output_file_name;
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
     new_name.insert(start_name+1, "("+QTime(0,0,0,0).addMSecs(total_target_ms).toString("hh_mm_ss")+") ");
@@ -252,7 +241,7 @@ void PodKastik::on_pb_download_clicked()
     do_ytdl();
 }
 void PodKastik::on_pb_convert_clicked()
-{
+{qDebug()<<"launch convert";
     ui->pb_progress->setValue(0);
     ui->pb_progress->setFormat("...");
     ui->l_output->setText("--"); this->setWindowTitle("PodKastik | "+ui->l_output->text());
