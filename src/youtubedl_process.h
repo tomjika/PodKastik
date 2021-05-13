@@ -5,8 +5,8 @@
 #include <QProcess>
 #include <QObject>
 #include <QFileDialog>
-#include <QMessageBox>
 #include <QRegularExpression>
+#include <QMessageBox>
 
 class youtubedl_process : public QWidget
 {
@@ -15,7 +15,7 @@ class youtubedl_process : public QWidget
 public:
     explicit youtubedl_process(QWidget *parent = nullptr, QString p = "");
     ~youtubedl_process();
-    void exe_process(QStringList);
+    void exe_process(QString);
 
 private slots:
     void process_out();
@@ -26,19 +26,28 @@ private slots:
 
 public:
     QProcess *process;
+
+  //youtube-dl app
     QString version = "";
     bool use_portable = false;
     QString exe_path;
-    bool ytdl_available = false;
+    bool available = false;
+
+  //process execution
     QString current_file_path_name;
     QString current_file_name;
     QString advance_status;
     double dl_progress;
 
+  //arguments
+    bool audio_only = true;
+    bool is_playlist = false;
+    QString output_folder;
+
 signals:
     void process_ready();
     void process_state(QProcess::ProcessState);
-    void process_ended();
+    void download_finished();
     void log(QString);
     void process_out_update();
 };

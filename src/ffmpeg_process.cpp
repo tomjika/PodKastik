@@ -15,24 +15,39 @@ ffmpeg_process::ffmpeg_process(QWidget *parent, QString p) :
     process->setArguments({"-version"});
 
     use_portable = QFile(exe_path).exists();
-    qDebug()<<process->arguments()<<process->program()<<use_portable;
     process->start(QIODevice::ReadWrite);
 }
-ffmpeg_process::~ffmpeg_process(){}
+ffmpeg_process::~ffmpeg_process()
+{}
+void ffmpeg_process::exe_process(QString file_name)
+{qDebug()<<"ffmpeg exe process"<<file_name;
+    QStringList args;
+    args<<"-progress"<<"pipe:1";
+    args<<"-loglevel"<<"32";
+    args<<"-y";//overwrite
+    args<<"-i";
+    args<<file_name;
+    args<<"-ac"<<(stereo_to_mono ? "1" : "2");
+    args<<"-ab"<<QString::number(to_kbit, 'f', 0).append("k");
+    args<<"-acodec"<<"mp3";
+    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
+    args<<output_file_name;
+
+    process->setArguments(args);
+    qDebug()<<process->arguments()<<process->program();
+    process->start(QIODevice::ReadWrite);
+}
 void ffmpeg_process::process_out()
 {bool ok;
     QRegularExpression sep("[:.]");
-    QByteArray out_str;
-    if(process->waitForReadyRead(30000))
-        out_str = process->readAllStandardOutput().simplified();
-    //QByteArray out_str = process->readAllStandardOutput().simplified();
+    QByteArray out_str = process->readAllStandardOutput().simplified();
     qDebug()<<"ffmpeg_out"<<out_str;
 
     if(QString(out_str).contains("version"))
     {
         version = out_str.remove(0, QString("ffmpeg version ").size());
         version.truncate(10);
-        ffmpeg_available = true;
+        available = true;
         emit process_ready();
     }
     else if(out_str.contains("out_time="))
@@ -47,13 +62,11 @@ void ffmpeg_process::process_out()
         speed_factor.truncate(speed_factor.indexOf("x"));
 
         QTime eta = QTime(0,0,0,0).addMSecs((total_target_ms-current_ms_ffmpeg)/speed_factor.toDouble(&ok));
-        qDebug()<<conv_progress<<eta<<"speed_factor"<<speed_factor<<QTime(0,0,0,0).msecsTo(eta);
+        //qDebug()<<conv_progress<<eta<<"speed_factor"<<speed_factor<<QTime(0,0,0,0).msecsTo(eta);
         advance_status = "Conversion ETA: "+eta.toString("hh:mm:ss");
-        if(out_str.contains("progress=end") || QTime(0,0,0,0).msecsTo(eta)<2000)// || ui->l_output->text()=="Conversion ETA: 00:00:00" || ui->l_output->text()=="Conversion ETA: 00:00:01" || ui->l_output->text()=="Conversion ETA: 00:00:02")
+        if(out_str.contains("progress=end") || QTime(0,0,0,0).msecsTo(eta)<1000)// || ui->l_output->text()=="Conversion ETA: 00:00:00" || ui->l_output->text()=="Conversion ETA: 00:00:01" || ui->l_output->text()=="Conversion ETA: 00:00:02")
         {
             process->waitForFinished(5);
-            //qDebug()<<"REMOVE"<<current_file_name<<QFile::remove(current_file_name);
-            //QFile::rename(output_file_name, current_file_name);
             conv_progress = 100;
             advance_status = "Conversion finished!";
         }
@@ -66,7 +79,7 @@ void ffmpeg_process::process_err()
     if(process->waitForReadyRead(300))
         out_str = process->readAllStandardError().simplified();
     //QByteArray out_str = process->readAllStandardError().simplified();
-    qDebug()<<"FFmpeg_ERR:"<<out_str;
+    //qDebug()<<"FFmpeg_ERR:"<<out_str;
     QRegularExpression sep("[:.]");
     if(out_str.contains("Duration"))
     {
@@ -74,27 +87,14 @@ void ffmpeg_process::process_err()
         QStringList dur_list = dur_str.left(dur_str.indexOf(",")).split(sep); if(dur_list.size()<4)return;
         current_file_duration = QTime(dur_list[0].toInt(), dur_list[1].toInt(), dur_list[2].toInt(), dur_list[3].toInt()*10);
         total_target_ms = QTime(0,0,0,0).msecsTo(current_file_duration)/speed_tempo;
-        qDebug()<<current_file_duration<<total_target_ms<<speed_tempo;
     }
-    else if(out_str.contains("size="))
-    {//size=     806kB time=00:01:43.08 bitrate=  64.1kbits/s speed=41.1x
-    }else emit log(out_str.trimmed());
+    else if(out_str.contains("size=")){/*size=     806kB time=00:01:43.08 bitrate=  64.1kbits/s speed=41.1x*/}
+    else emit log(out_str.trimmed());
 }
-void ffmpeg_process::process_error_state(QProcess::ProcessError err){qDebug()<<"ffmpeg_err_state"<<err;}
-void ffmpeg_process::process_state_changed(QProcess::ProcessState s){emit process_state(s);}
-void ffmpeg_process::exe_process(QStringList args)
-{
-    //args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
-    process->setArguments(args);
-    qDebug()<<process->arguments()<<process->program();
-    process->start(QIODevice::ReadWrite);
-}
+void ffmpeg_process::process_error_state(QProcess::ProcessError err){ qDebug()<<"ffmpeg_err_state"<<err<<process->errorString();}
+void ffmpeg_process::process_state_changed(QProcess::ProcessState s){ emit process_state(s);}
 void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
-{qDebug()<<"ffmpeg_FINISHED"<<code<<state;
-    /*qDebug()<<"REMOVE"<<youtube_dl->current_file_path_name<<QFile::remove(youtube_dl->current_file_path_name);
-    QString new_name = output_file_name;
-    int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
-    new_name.insert(start_name+1, "("+QTime(0,0,0,0).addMSecs(total_target_ms).toString("hh_mm_ss")+") ");
-    qDebug()<<"output_file_name EXISTS"<<QFile::exists(current_file_name);
-    qDebug()<<"RENAME"<<new_name<<QFile::rename(output_file_name, new_name);*/
+{
+    qDebug()<<"ffmpeg_FINISHED"<<code<<state;
+    if(conv_progress == 100) emit conversion_finished();
 }

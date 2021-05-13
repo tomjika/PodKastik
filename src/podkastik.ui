@@ -152,6 +152,9 @@
    </property>
   </widget>
   <widget class="QPushButton" name="pb_download">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -423,6 +426,9 @@
    </property>
   </widget>
   <widget class="QPushButton" name="pb_select_file_to_convert">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>150</x>

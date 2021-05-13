@@ -5,7 +5,6 @@
 #include <QProcess>
 #include <QObject>
 #include <QFileDialog>
-#include <QMessageBox>
 #include <QRegularExpression>
 
 class ffmpeg_process : public QWidget
@@ -15,7 +14,7 @@ class ffmpeg_process : public QWidget
 public:
     explicit ffmpeg_process(QWidget *parent = nullptr, QString p = "");
     ~ffmpeg_process();
-    void exe_process(QStringList);
+    void exe_process(QString);
 
 private slots:
     void process_out();
@@ -26,21 +25,30 @@ private slots:
 
 public:
     QProcess *process;
+
+  //ffmpeg app
     QString version = "";
     bool use_portable = false;
     QString exe_path;
-    bool ffmpeg_available = false;
+    bool available = false;
+
+  //process execution
     QString advance_status;
     double conv_progress;
     QTime current_file_duration;
     int total_target_ms = 1;
     int current_ms_ffmpeg = 0;
+
+  //arguments
     double speed_tempo;
+    bool stereo_to_mono;
+    double to_kbit;
+    QString output_file_name;
 
 signals:
     void process_ready();
     void process_state(QProcess::ProcessState);
-    void process_ended();
+    void conversion_finished();
     void log(QString);
     void process_out_update();
 };
