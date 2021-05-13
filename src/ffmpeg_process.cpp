@@ -22,7 +22,10 @@ ffmpeg_process::~ffmpeg_process(){}
 void ffmpeg_process::process_out()
 {bool ok;
     QRegularExpression sep("[:.]");
-    QByteArray out_str = process->readAllStandardOutput().simplified();
+    QByteArray out_str;
+    if(process->waitForReadyRead(30000))
+        out_str = process->readAllStandardOutput().simplified();
+    //QByteArray out_str = process->readAllStandardOutput().simplified();
     qDebug()<<"ffmpeg_out"<<out_str;
 
     if(QString(out_str).contains("version"))
@@ -46,11 +49,12 @@ void ffmpeg_process::process_out()
         QTime eta = QTime(0,0,0,0).addMSecs((total_target_ms-current_ms_ffmpeg)/speed_factor.toDouble(&ok));
         qDebug()<<conv_progress<<eta<<"speed_factor"<<speed_factor<<QTime(0,0,0,0).msecsTo(eta);
         advance_status = "Conversion ETA: "+eta.toString("hh:mm:ss");
-        if(out_str.contains("progress=end") || QTime(0,0,0,0).msecsTo(eta)<1000)// || ui->l_output->text()=="Conversion ETA: 00:00:00" || ui->l_output->text()=="Conversion ETA: 00:00:01" || ui->l_output->text()=="Conversion ETA: 00:00:02")
+        if(out_str.contains("progress=end") || QTime(0,0,0,0).msecsTo(eta)<2000)// || ui->l_output->text()=="Conversion ETA: 00:00:00" || ui->l_output->text()=="Conversion ETA: 00:00:01" || ui->l_output->text()=="Conversion ETA: 00:00:02")
         {
             process->waitForFinished(5);
             //qDebug()<<"REMOVE"<<current_file_name<<QFile::remove(current_file_name);
             //QFile::rename(output_file_name, current_file_name);
+            conv_progress = 100;
             advance_status = "Conversion finished!";
         }
         emit process_out_update();
@@ -58,7 +62,10 @@ void ffmpeg_process::process_out()
 }
 void ffmpeg_process::process_err()
 {
-    QByteArray out_str = process->readAllStandardError().simplified();
+    QByteArray out_str;
+    if(process->waitForReadyRead(300))
+        out_str = process->readAllStandardError().simplified();
+    //QByteArray out_str = process->readAllStandardError().simplified();
     qDebug()<<"FFmpeg_ERR:"<<out_str;
     QRegularExpression sep("[:.]");
     if(out_str.contains("Duration"))
@@ -77,7 +84,7 @@ void ffmpeg_process::process_error_state(QProcess::ProcessError err){qDebug()<<"
 void ffmpeg_process::process_state_changed(QProcess::ProcessState s){emit process_state(s);}
 void ffmpeg_process::exe_process(QStringList args)
 {
-    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
+    //args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
     process->setArguments(args);
     qDebug()<<process->arguments()<<process->program();
     process->start(QIODevice::ReadWrite);

@@ -145,10 +145,8 @@ void PodKastik::ffmpeg_process_out()
     ui->pb_progress->setValue(ffmpeg->conv_progress);
     this->setWindowTitle("PodKastik | C: "+QString::number(ffmpeg->conv_progress,'f',2)+"%");
     ui->pb_progress->setFormat("Converting...");
-qDebug()<<ffmpeg->conv_progress<<ui->pb_progress->value();
-    if(ffmpeg->conv_progress == 100
-       && ffmpeg->process->waitForFinished())
-        this->setWindowTitle("PodKastik | done!");
+
+    if(ffmpeg->conv_progress == 100) this->setWindowTitle("PodKastik | done!");
 }
 void PodKastik::ffmpeg_error_state(QProcess::ProcessError err){qDebug()<<"ffmpeg_err_state"<<err;}
 void PodKastik::ffmpeg_state_changed(QProcess::ProcessState s)
@@ -173,7 +171,7 @@ void PodKastik::do_ffmpeg(QString file_path_name)
     args<<"-ac"<<(stereo_to_mono ? "1" : "2");
     args<<"-ab"<<QString::number(to_kbit, 'f', 0).append("k");
     args<<"-acodec"<<"mp3";
-//    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
+    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(ffmpeg->speed_tempo, 'f', 2));
     args<<output_file_name;
 
     ffmpeg->exe_process(args);
