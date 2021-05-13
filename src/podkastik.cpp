@@ -21,14 +21,16 @@ PodKastik::PodKastik(QWidget *parent) :
         connect(youtube_dl, SIGNAL(process_out_update()), this, SLOT(ytdl_process_out()));
         connect(youtube_dl, SIGNAL(log(QString)), this, SLOT(logging(QString)));
         connect(youtube_dl, SIGNAL(process_state(QProcess::ProcessState)), this, SLOT(ytdl_state_changed(QProcess::ProcessState)));
-        connect(youtube_dl, SIGNAL(ytdl_process_ended()), this, SLOT(ytdl_finished()));
+        connect(youtube_dl, SIGNAL(process_ended()), this, SLOT(ytdl_finished()));
 
-    ffmpeg = new QProcess();
-        connect(ffmpeg, SIGNAL(readyReadStandardOutput()), this, SLOT(ffmpeg_process_out()));
-        connect(ffmpeg, SIGNAL(readyReadStandardError()), this, SLOT(ffmpeg_process_err()));
-        connect(ffmpeg, SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(ffmpeg_state_changed(QProcess::ProcessState)));
-        connect(ffmpeg, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(ffmpeg_error_state(QProcess::ProcessError)));
-        connect(ffmpeg, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(ffmpeg_finished(int, QProcess::ExitStatus)));
+    ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
+    ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
+    ffmpeg = new ffmpeg_process(this, ffmpeg_folder);
+        connect(ffmpeg, SIGNAL(process_ready()), this, SLOT(loadSettings()));
+        connect(ffmpeg, SIGNAL(process_out_update()), this, SLOT(ffmpeg_process_out()));
+        connect(ffmpeg, SIGNAL(log(QString)), this, SLOT(logging(QString)));
+        connect(ffmpeg, SIGNAL(process_state(QProcess::ProcessState)), this, SLOT(ffmpeg_state_changed(QProcess::ProcessState)));
+        connect(ffmpeg, SIGNAL(process_ended()), this, SLOT(ffmpeg_finished()));
 
     ui->sb_kbits->blockSignals(true);
     ui->cb_to_mono->blockSignals(true);
@@ -52,15 +54,14 @@ void PodKastik::loadSettings()
         ui->pb_browse_ytdl->setToolTip("Version: "+youtube_dl->version);
     }else ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
 
-    ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
-    ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
-    ffmpeg->setProgram(ffmpeg_folder);
-    if(!ffmpeg->startDetached()){}
-        //QMessageBox::critical(this, "FFmpeg not found", "FFmpeg not found", QMessageBox::Ok);
-    else ffmpeg->terminate();
+    if(ffmpeg->ffmpeg_available)
+    {
+        ui->pb_browse_ffmpeg->setText(ffmpeg->use_portable ? "FFmpeg Exe: "+ffmpeg_folder : "FFmpeg is installed");
+        ui->pb_browse_ffmpeg->setToolTip("Version: "+ffmpeg->version);
+    }else ui->pb_browse_ffmpeg->setText("FFmpeg is not installed or .exe not found");
 
-    speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
-    ui->dsb_tempo->setValue(speed_tempo);
+    ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
+    ui->dsb_tempo->setValue(ffmpeg->speed_tempo);
 
     stereo_to_mono = my_settings.value("stereo_to_mono").toBool();
     ui->cb_to_mono->setChecked(stereo_to_mono);
@@ -78,7 +79,7 @@ void PodKastik::saveSettings()
     my_settings.setValue("default_folder", default_folder);
     my_settings.setValue("ytdl_folder", ytdl_folder);
     my_settings.setValue("ffmpeg_folder", ffmpeg_folder);
-    my_settings.setValue("speed_tempo", speed_tempo);
+    my_settings.setValue("speed_tempo", ffmpeg->speed_tempo);
     my_settings.setValue("stereo_to_mono", stereo_to_mono);
     my_settings.setValue("kbit", to_kbit);
 }
@@ -95,17 +96,24 @@ void PodKastik::ytdl_process_out()
     ui->pb_progress->setFormat("Downloading...");
 
     if(youtube_dl->dl_progress == 100
-       && youtube_dl->ytdl_process->waitForFinished()
+       && youtube_dl->process->waitForFinished()
        && ui->cb_then->isEnabled()
        && ui->cb_then->isChecked())
-        ui->pb_convert->click();
+    {
+        ui->pb_progress->setValue(0);
+        ui->pb_progress->setFormat("...");
+        ui->l_output->setText("--");
+        this->setWindowTitle("PodKastik | "+ui->l_output->text());
+        if(ffmpeg->process->state() == QProcess::Running){ffmpeg->process->kill(); return;}
+        do_ffmpeg(youtube_dl->current_file_path_name);
+    }
 }
 void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 {
     switch(s){
-        case QProcess::NotRunning: ui->pb_download->setText("Paste and download"); ui->pb_convert->setEnabled(true); break;
-        case QProcess::Starting: ui->pb_download->setText("Stop download"); ui->pb_convert->setEnabled(false); break;
-        case QProcess::Running: ui->pb_download->setText("Stop download"); ui->pb_convert->setEnabled(false); break;
+        case QProcess::NotRunning: ui->pb_download->setText("Paste and download"); break;
+        case QProcess::Starting: ui->pb_download->setText("Stop download"); break;
+        case QProcess::Running: ui->pb_download->setText("Stop download"); break;
     }
 }
 void PodKastik::do_ytdl()
@@ -125,83 +133,35 @@ void PodKastik::do_ytdl()
 
     youtube_dl->exe_process(args);
 }
-void PodKastik::ytdl_finished()
-{
-    /*if(ui->cb_then->isEnabled() && ui->cb_then->isChecked())
-        ui->pb_convert->click();*/
-}
+void PodKastik::ytdl_finished(){}
 
 /******************************************************************************************/
 /*********************** FFmpeg ***********************************************************/
 /******************************************************************************************/
 void PodKastik::ffmpeg_process_out()
-{bool ok;
-    QRegularExpression sep("[:.]");
-    QByteArray out_str;
-    if(ffmpeg->waitForReadyRead(30000))
-        out_str = ffmpeg->readAllStandardOutput();
-    out_str = out_str.simplified();
-    qDebug()<<"ffmpeg_out"<<out_str;
-
-    if(out_str.contains("out_time="))
-    {
-        ui->pb_progress->setFormat("Converting...");
-        QString dur_str = out_str.right(out_str.count()-out_str.indexOf("out_time=")-9);
-        QStringList dur_list = dur_str.left(dur_str.indexOf(" dup_frames")).split(sep);
-        QTime duration(dur_list[0].toInt(), dur_list[1].toInt(), dur_list[2].toInt(), dur_list[3].toInt()/1000);
-        current_ms_ffmpeg = QTime(0,0,0,0).msecsTo(duration);
-        ui->pb_progress->setValue(100.0*(double)current_ms_ffmpeg/(total_target_ms!=0 ? (double)total_target_ms : 1.0));
-        this->setWindowTitle("PodKastik | C: "+QString::number(100.0*(double)current_ms_ffmpeg/(total_target_ms!=0 ? (double)total_target_ms : 1.0),'f',2)+"%");
-
-        QString speed_factor = out_str.right(out_str.count()-out_str.indexOf("speed=")-6).simplified();
-        speed_factor.truncate(speed_factor.indexOf("x"));
-
-        QTime eta = QTime(0,0,0,0).addMSecs((total_target_ms-current_ms_ffmpeg)/speed_factor.toDouble(&ok));
-        qDebug()<<eta<<"speed_factor"<<speed_factor<<QTime(0,0,0,0).msecsTo(eta);
-        ui->l_output->setText("Conversion ETA: "+eta.toString("hh:mm:ss"));
-        if(out_str.contains("progress=end") || QTime(0,0,0,0).msecsTo(eta)<2000)// || ui->l_output->text()=="Conversion ETA: 00:00:00" || ui->l_output->text()=="Conversion ETA: 00:00:01" || ui->l_output->text()=="Conversion ETA: 00:00:02")
-        {
-            ffmpeg->waitForFinished(5);
-            //qDebug()<<"REMOVE"<<current_file_name<<QFile::remove(current_file_name);
-            //QFile::rename(output_file_name, current_file_name);
-            ui->pb_progress->setValue(ui->pb_progress->maximum());
-            ui->l_output->setText("Conversion finished!"); this->setWindowTitle("PodKastik | done!");
-        }
-    }
-}
-void PodKastik::ffmpeg_process_err()
 {
-    QByteArray out_str;
-    if(ffmpeg->waitForReadyRead(300))
-        out_str = ffmpeg->readAllStandardError();
-    out_str = out_str.simplified();
-    qDebug()<<"FFmpeg_ERR:"<<out_str;
-    QRegularExpression sep("[:.]");
-    if(out_str.contains("Duration"))
-    {
-        QString dur_str = out_str.right(out_str.count()-out_str.indexOf("Duration: ")-10);
-        QStringList dur_list = dur_str.left(dur_str.indexOf(",")).split(sep); if(dur_list.size()<4)return;
-        current_file_duration = QTime(dur_list[0].toInt(), dur_list[1].toInt(), dur_list[2].toInt(), dur_list[3].toInt()*10);
-        total_target_ms = QTime(0,0,0,0).msecsTo(current_file_duration)/speed_tempo;
-        //qDebug()<<current_file_duration<<total_target_ms;
-    }
-    else if(out_str.contains("size="))
-    {//size=     806kB time=00:01:43.08 bitrate=  64.1kbits/s speed=41.1x
-    }else ui->te_log->appendPlainText(out_str.trimmed());
+    ui->l_current_file_name->setText(output_file_name);
+    ui->l_output->setText(ffmpeg->advance_status);
+    ui->pb_progress->setValue(ffmpeg->conv_progress);
+    this->setWindowTitle("PodKastik | C: "+QString::number(ffmpeg->conv_progress,'f',2)+"%");
+    ui->pb_progress->setFormat("Converting...");
+qDebug()<<ffmpeg->conv_progress<<ui->pb_progress->value();
+    if(ffmpeg->conv_progress == 100
+       && ffmpeg->process->waitForFinished())
+        this->setWindowTitle("PodKastik | done!");
 }
 void PodKastik::ffmpeg_error_state(QProcess::ProcessError err){qDebug()<<"ffmpeg_err_state"<<err;}
 void PodKastik::ffmpeg_state_changed(QProcess::ProcessState s)
 {qDebug()<<"ffmpeg state: "<<s;
     switch(s){
-        case QProcess::NotRunning: ui->pb_convert->setText("Convert"); ui->pb_download->setEnabled(true); break;
-        case QProcess::Starting: ui->pb_convert->setText("Stop convert"); ui->pb_download->setEnabled(false); break;
-        case QProcess::Running: ui->pb_convert->setText("Stop convert"); ui->pb_download->setEnabled(false); break;
+        case QProcess::NotRunning: ui->pb_select_file_to_convert->setText("Select and convert"); ui->pb_download->setEnabled(true); break;
+        case QProcess::Starting: ui->pb_select_file_to_convert->setText("Stop convert"); ui->pb_download->setEnabled(false); break;
+        case QProcess::Running: ui->pb_select_file_to_convert->setText("Stop convert"); ui->pb_download->setEnabled(false); break;
     }
 }
-void PodKastik::do_ffmpeg()
+void PodKastik::do_ffmpeg(QString file_path_name)
 {//sox -S -t mp3 -b 64 "$i" ./$fn2"X.mp3" channels 1 tempo $tmpo (S: show progress, t: filetype, -b: bitrate,
-    //ffmpeg->setProgram(ffmpeg_folder);
-    output_file_name = youtube_dl->current_file_path_name;
+    output_file_name = file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
     qDebug()<<"current_file_name EXISTS"<<QFile::exists(youtube_dl->current_file_path_name);
     QStringList args;
@@ -209,24 +169,23 @@ void PodKastik::do_ffmpeg()
     args<<"-loglevel"<<"32";
     args<<"-y";//overwrite
     args<<"-i";
-    args<<youtube_dl->current_file_path_name;
+    args<<file_path_name;
     args<<"-ac"<<(stereo_to_mono ? "1" : "2");
     args<<"-ab"<<QString::number(to_kbit, 'f', 0).append("k");
     args<<"-acodec"<<"mp3";
-    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
+//    args<<"-af"<<QString("dynaudnorm=f=150:g=15,atempo=").append(QString::number(speed_tempo, 'f', 2));
     args<<output_file_name;
-    ffmpeg->setArguments(args);
-    qDebug()<<ffmpeg->arguments()<<ffmpeg->program();
-    ffmpeg->start(QIODevice::ReadWrite);
+
+    ffmpeg->exe_process(args);
 }
-void PodKastik::ffmpeg_finished(int code, QProcess::ExitStatus state)
-{qDebug()<<"ffmpeg_FINISHED"<<code<<state;
+void PodKastik::ffmpeg_finished()
+{/*qDebug()<<"ffmpeg_FINISHED"<<code<<state;
     qDebug()<<"REMOVE"<<youtube_dl->current_file_path_name<<QFile::remove(youtube_dl->current_file_path_name);
     QString new_name = output_file_name;
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
     new_name.insert(start_name+1, "("+QTime(0,0,0,0).addMSecs(total_target_ms).toString("hh_mm_ss")+") ");
     qDebug()<<"output_file_name EXISTS"<<QFile::exists(current_file_name);
-    qDebug()<<"RENAME"<<new_name<<QFile::rename(output_file_name, new_name);
+    qDebug()<<"RENAME"<<new_name<<QFile::rename(output_file_name, new_name);*/
 }
 
 /******************************************************************************************/
@@ -239,14 +198,6 @@ void PodKastik::on_pb_download_clicked()
     ui->l_output->setText("--"); this->setWindowTitle("PodKastik | "+ui->l_output->text());
     //if(youtube_dl->state() == QProcess::Running){youtube_dl->kill(); return;}
     do_ytdl();
-}
-void PodKastik::on_pb_convert_clicked()
-{qDebug()<<"launch convert";
-    ui->pb_progress->setValue(0);
-    ui->pb_progress->setFormat("...");
-    ui->l_output->setText("--"); this->setWindowTitle("PodKastik | "+ui->l_output->text());
-    if(ffmpeg->state() == QProcess::Running){ffmpeg->kill(); return;}
-    do_ffmpeg();
 }
 void PodKastik::on_pb_browse_clicked()
 {
@@ -282,7 +233,7 @@ void PodKastik::on_pb_browse_ffmpeg_clicked()
 }
 void PodKastik::on_dsb_tempo_valueChanged(double arg1)
 {
-    speed_tempo = arg1; saveSettings();
+    ffmpeg->speed_tempo = arg1; saveSettings();
 }
 void PodKastik::on_sb_kbits_valueChanged(double arg1)
 {
@@ -295,12 +246,20 @@ void PodKastik::on_cb_to_mono_stateChanged(int arg1)
 void PodKastik::on_rb_video_toggled(bool checked)
 {
     ui->cb_then->setEnabled(!checked);
-    ui->pb_convert->setEnabled(!checked);
 }
 void PodKastik::on_pb_select_file_to_convert_clicked()
 {
+    if(ffmpeg->process->state() == QProcess::Running) //stop conversion
+    {
+        ffmpeg->process->kill();
+        ui->pb_progress->setValue(0);
+        ui->pb_progress->setFormat("...");
+        ui->l_output->setText("Conversion stopped");
+        this->setWindowTitle("PodKastik | "+ui->l_output->text());
+        return;
+    }
     current_file_name = QFileDialog::getOpenFileName(this, "Select file to convert", output_path);
-    ui->pb_convert->click();
+    do_ffmpeg(current_file_name);
 }
 void PodKastik::on_pb_open_output_path_clicked()
 {

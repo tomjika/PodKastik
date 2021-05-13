@@ -29,11 +29,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        ffmpeg_process.cpp \
         main.cpp \
         podkastik.cpp \
         youtubedl_process.cpp
 
 HEADERS += \
+        ffmpeg_process.h \
         podkastik.h \
         youtubedl_process.h
 

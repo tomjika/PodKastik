@@ -1,5 +1,5 @@
-#ifndef YOUTUBEDL_PROCESS_H
-#define YOUTUBEDL_PROCESS_H
+#ifndef FFMPEG_PROCESS_H
+#define FFMPEG_PROCESS_H
 
 #include <QWidget>
 #include <QProcess>
@@ -8,13 +8,13 @@
 #include <QMessageBox>
 #include <QRegularExpression>
 
-class youtubedl_process : public QWidget
+class ffmpeg_process : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit youtubedl_process(QWidget *parent = nullptr, QString p = "");
-    ~youtubedl_process();
+    explicit ffmpeg_process(QWidget *parent = nullptr, QString p = "");
+    ~ffmpeg_process();
     void exe_process(QStringList);
 
 private slots:
@@ -29,11 +29,13 @@ public:
     QString version = "";
     bool use_portable = false;
     QString exe_path;
-    bool ytdl_available = false;
-    QString current_file_path_name;
-    QString current_file_name;
+    bool ffmpeg_available = false;
     QString advance_status;
-    double dl_progress;
+    double conv_progress;
+    QTime current_file_duration;
+    int total_target_ms = 1;
+    int current_ms_ffmpeg = 0;
+    double speed_tempo;
 
 signals:
     void process_ready();
@@ -43,4 +45,4 @@ signals:
     void process_out_update();
 };
 
-#endif // YOUTUBEDL_PROCESS_H
+#endif // FFMPEG_PROCESS_H

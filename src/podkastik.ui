@@ -37,6 +37,9 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="minimum">
+    <number>0</number>
+   </property>
    <property name="value">
     <number>0</number>
    </property>
@@ -153,7 +156,7 @@
     <rect>
      <x>10</x>
      <y>80</y>
-     <width>121</width>
+     <width>141</width>
      <height>23</height>
     </rect>
    </property>
@@ -296,31 +299,6 @@
     <string>FFmpeg Exe:</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pb_convert">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>80</y>
-     <width>79</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="font">
-    <font>
-     <weight>75</weight>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>Convert</string>
-   </property>
-  </widget>
   <widget class="QCheckBox" name="cb_playlist">
    <property name="geometry">
     <rect>
@@ -337,21 +315,21 @@
   <widget class="QCheckBox" name="cb_then">
    <property name="geometry">
     <rect>
-     <x>131</x>
-     <y>80</y>
-     <width>51</width>
+     <x>130</x>
+     <y>60</y>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>16</pointsize>
-     <weight>75</weight>
-     <bold>true</bold>
+     <pointsize>8</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
     </font>
    </property>
    <property name="text">
-    <string>➔</string>
+    <string>and convert</string>
    </property>
    <property name="iconSize">
     <size>
@@ -447,9 +425,9 @@
   <widget class="QPushButton" name="pb_select_file_to_convert">
    <property name="geometry">
     <rect>
-     <x>248</x>
+     <x>150</x>
      <y>80</y>
-     <width>43</width>
+     <width>141</width>
      <height>23</height>
     </rect>
    </property>
@@ -469,7 +447,7 @@
     <string>Select a file to convert</string>
    </property>
    <property name="text">
-    <string>Select</string>
+    <string>Select to convert</string>
    </property>
    <property name="iconSize">
     <size>
@@ -505,7 +483,6 @@
   <zorder>pb_browse_ytdl</zorder>
   <zorder>pb_browse_default</zorder>
   <zorder>pb_browse_ffmpeg</zorder>
-  <zorder>pb_convert</zorder>
   <zorder>cb_playlist</zorder>
   <zorder>cb_then</zorder>
   <zorder>line</zorder>
