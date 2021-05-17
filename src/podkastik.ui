@@ -113,9 +113,9 @@
   <widget class="QRadioButton" name="rb_video">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>80</x>
      <y>60</y>
-     <width>61</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -128,13 +128,19 @@
    <property name="text">
     <string>Video</string>
    </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
   </widget>
   <widget class="QRadioButton" name="rb_audio">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>60</y>
-     <width>61</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -176,7 +182,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Paste and download</string>
+    <string>Download and Convert</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pb_browse">
@@ -305,9 +311,9 @@
   <widget class="QCheckBox" name="cb_playlist">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>237</x>
      <y>60</y>
-     <width>61</width>
+     <width>56</width>
      <height>21</height>
     </rect>
    </property>
@@ -315,12 +321,12 @@
     <string>Playlist</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="cb_then">
+  <widget class="QCheckBox" name="cb_auto_convert">
    <property name="geometry">
     <rect>
-     <x>130</x>
+     <x>152</x>
      <y>60</y>
-     <width>81</width>
+     <width>83</width>
      <height>21</height>
     </rect>
    </property>
@@ -332,7 +338,7 @@
     </font>
    </property>
    <property name="text">
-    <string>and convert</string>
+    <string>Auto convert</string>
    </property>
    <property name="iconSize">
     <size>
@@ -475,6 +481,19 @@
     <string>Open</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="pb_about">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>290</y>
+     <width>60</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>About</string>
+   </property>
+  </widget>
   <zorder>layoutWidget</zorder>
   <zorder>l_path</zorder>
   <zorder>pb_progress</zorder>
@@ -490,10 +509,11 @@
   <zorder>pb_browse_default</zorder>
   <zorder>pb_browse_ffmpeg</zorder>
   <zorder>cb_playlist</zorder>
-  <zorder>cb_then</zorder>
+  <zorder>cb_auto_convert</zorder>
   <zorder>line</zorder>
   <zorder>pb_select_file_to_convert</zorder>
   <zorder>pb_open_output_path</zorder>
+  <zorder>pb_about</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

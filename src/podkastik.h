@@ -78,6 +78,7 @@ private slots:
     bool urlExists(QString);
     void logging(QString);
     void tag_and_del();
+    void on_pb_about_clicked();
 };
 
 #endif // PODKASTIK_H

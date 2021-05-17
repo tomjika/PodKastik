@@ -103,6 +103,7 @@ void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 void PodKastik::do_ytdl()
 {
     dl_link = clipboard->text();
+    if(dl_link.isEmpty()){QMessageBox::information(this, "Error", "Clipboard empty", QMessageBox::Ok); return;}
     //dl_link = "https://www.youtube.com/watch?v=n4CjtoNoQ1Q";
     if(!dl_link.contains("http"))dl_link.prepend("https://");
     if(!urlExists(dl_link)){QMessageBox::information(this, "Error", "Invalid url: "+dl_link, QMessageBox::Ok); return;}
@@ -112,7 +113,7 @@ void PodKastik::do_ytdl()
 }
 void PodKastik::ytdl_finished()
 {
-    if(ui->cb_then->isEnabled() && ui->cb_then->isChecked()
+    if(ui->cb_auto_convert->isEnabled() && ui->cb_auto_convert->isChecked()
         && ffmpeg->process->state() == QProcess::NotRunning)
             do_ffmpeg(youtube_dl->current_file_path_name);
 }
@@ -163,15 +164,20 @@ void PodKastik::ffmpeg_finished()
 /*********************** VIEW *************************************************************/
 void PodKastik::on_pb_download_clicked()
 {
-    ui->pb_progress->setValue(0);
-    ui->pb_progress->setFormat("...");
-    ui->l_output->setText("--"); this->setWindowTitle("PodKastik | "+ui->l_output->text());
-    //if(youtube_dl->state() == QProcess::Running){youtube_dl->kill(); return;}
-    do_ytdl();
+    if(youtube_dl->process->state() != QProcess::NotRunning) //stop download
+    {
+        youtube_dl->process->kill();
+        ui->pb_progress->setValue(0);
+        ui->pb_progress->setFormat("...");
+        ui->l_output->setText("Download stopped");
+        this->setWindowTitle("PodKastik | "+ui->l_output->text());
+        return;
+    }else
+        do_ytdl();
 }
 void PodKastik::on_pb_select_file_to_convert_clicked()
 {
-    if(ffmpeg->process->state() == QProcess::Running) //stop conversion
+    if(ffmpeg->process->state() == QProcess::NotRunning) //stop conversion
     {
         ffmpeg->process->kill();
         ui->pb_progress->setValue(0);
@@ -179,9 +185,10 @@ void PodKastik::on_pb_select_file_to_convert_clicked()
         ui->l_output->setText("Conversion stopped");
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
         return;
+    }else{
+        QString str = QFileDialog::getOpenFileName(this, "Select file to convert", output_path);
+        if(!str.isEmpty()) do_ffmpeg(str);
     }
-    QString str = QFileDialog::getOpenFileName(this, "Select file to convert", output_path);
-    if(!str.isEmpty()) do_ffmpeg(str);
 }
 void PodKastik::on_pb_browse_clicked()
 {
@@ -220,7 +227,7 @@ void PodKastik::on_dsb_tempo_valueChanged(double arg1){ ffmpeg->speed_tempo = ar
 void PodKastik::on_sb_kbits_valueChanged(double arg1){ ffmpeg->to_kbit = arg1; saveSettings();}
 void PodKastik::on_cb_to_mono_stateChanged(int arg1){ ffmpeg->stereo_to_mono = arg1; saveSettings();}
 void PodKastik::on_rb_audio_toggled(bool checked){ youtube_dl->audio_only = checked;}
-void PodKastik::on_rb_video_toggled(bool checked){ ui->cb_then->setEnabled(!checked);}
+void PodKastik::on_rb_video_toggled(bool checked){ ui->cb_auto_convert->setEnabled(!checked);}
 void PodKastik::on_cb_playlist_stateChanged(int arg1){ youtube_dl->is_playlist = arg1;}
 void PodKastik::on_pb_open_output_path_clicked(){ QDesktopServices::openUrl(QUrl::fromLocalFile(output_path));}
 
@@ -257,4 +264,16 @@ bool PodKastik::urlExists(QString url_string)
             }
         }
     }return false;
+}
+
+void PodKastik::on_pb_about_clicked()
+{
+    QMessageBox about_box(this);
+    about_box.setTextFormat(Qt::RichText);
+    about_box.setText("About PodKastik");
+    about_box.setText("Download audio file from link in clipboard.<br>"
+                        "Convert it depending on parameters.<br><br>"
+                        "Youtube-dl and FFmpeg are needed.<br><br>"
+                        "<a href='https://github.com/tomjika/PodKastik'>PodKastik on Github!</a>");
+    about_box.exec();
 }
