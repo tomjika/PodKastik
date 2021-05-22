@@ -177,7 +177,7 @@ void PodKastik::on_pb_download_clicked()
 }
 void PodKastik::on_pb_select_file_to_convert_clicked()
 {
-    if(ffmpeg->process->state() == QProcess::NotRunning) //stop conversion
+    if(ffmpeg->process->state() != QProcess::NotRunning) //stop conversion
     {
         ffmpeg->process->kill();
         ui->pb_progress->setValue(0);
