@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include "youtubedl_process.h"
 #include "ffmpeg_process.h"
+#include <QMimeData>
 
 namespace Ui {
 class PodKastik;
@@ -22,6 +23,8 @@ class PodKastik : public QWidget
 public:
     explicit PodKastik(QWidget *parent = nullptr);
     ~PodKastik();
+    void dragEnterEvent(QDragEnterEvent*);
+    void dropEvent(QDropEvent*);
 
 private:
     Ui::PodKastik *ui;

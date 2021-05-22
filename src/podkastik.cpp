@@ -8,6 +8,8 @@ PodKastik::PodKastik(QWidget *parent) :
     ui->setupUi(this);
     this->setFixedHeight(165);
 
+    setAcceptDrops(true);
+
     clipboard = QApplication::clipboard();
     connect(clipboard, SIGNAL(dataChanged()), this, SLOT(clip_paste()));
     dl_link = clipboard->text();
@@ -33,6 +35,26 @@ PodKastik::PodKastik(QWidget *parent) :
         connect(ffmpeg, SIGNAL(conversion_finished()), this, SLOT(ffmpeg_finished()));
 }
 PodKastik::~PodKastik(){delete ui;}
+void PodKastik::dragEnterEvent(QDragEnterEvent *event)
+{
+    if(youtube_dl->process->state() == QProcess::NotRunning
+        || ffmpeg->process->state() == QProcess::NotRunning) event->accept();
+}
+void PodKastik::dropEvent(QDropEvent *event)
+{
+    const QMimeData* mimeData = event->mimeData();
+
+    if(mimeData->hasUrls())
+    {
+        QStringList pathList;
+        QList<QUrl> urlList = mimeData->urls();
+        for(int i=0; (i<urlList.size()) && (i<32); i++)
+        {
+            pathList.append(urlList.at(i).toLocalFile());
+        }
+        do_ffmpeg(pathList[0]);
+    }
+}
 void PodKastik::loadSettings()
 {bool ok;
     QSettings my_settings("Studio1656", "PodKastik", this);
