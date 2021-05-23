@@ -22,9 +22,13 @@ Auto-convert after download (or not)
 
 Download playlist (no conversion)
 
-Conversion only by selecting a file
+Select a file to convert
 
 Video download (no conversion)
+
+Drag and drop a link for download
+
+Drag and drop a file for conversion
 
 Output directory, speed and resample values are remembered
 
