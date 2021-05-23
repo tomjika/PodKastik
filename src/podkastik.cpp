@@ -12,7 +12,6 @@ PodKastik::PodKastik(QWidget *parent) :
 
     clipboard = QApplication::clipboard();
     connect(clipboard, SIGNAL(dataChanged()), this, SLOT(clip_paste()));
-    dl_link = clipboard->text();
     clip_paste();
 
     QSettings my_settings("Studio1656", "PodKastik", this);
@@ -38,21 +37,22 @@ PodKastik::~PodKastik(){delete ui;}
 void PodKastik::dragEnterEvent(QDragEnterEvent *event)
 {
     if(youtube_dl->process->state() == QProcess::NotRunning
-        || ffmpeg->process->state() == QProcess::NotRunning) event->accept();
+        && ffmpeg->process->state() == QProcess::NotRunning) event->accept();
 }
 void PodKastik::dropEvent(QDropEvent *event)
 {
-    const QMimeData* mimeData = event->mimeData();
+    event->accept();
 
+    const QMimeData* mimeData = event->mimeData();
+    qDebug()<<mimeData;
     if(mimeData->hasUrls())
     {
-        QStringList pathList;
         QList<QUrl> urlList = mimeData->urls();
-        for(int i=0; (i<urlList.size()) && (i<32); i++)
-        {
-            pathList.append(urlList.at(i).toLocalFile());
-        }
-        do_ffmpeg(pathList[0]);
+
+        if(urlList[0].isLocalFile())
+            do_ffmpeg(urlList[0].toLocalFile());
+        else
+            youtube_dl->exe_process(urlList[0].toString());
     }
 }
 void PodKastik::loadSettings()
@@ -116,22 +116,17 @@ void PodKastik::ytdl_process_out()
 }
 void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 {
-    switch(s){
-        case QProcess::NotRunning: ui->pb_download->setText("Paste and download"); ui->pb_select_file_to_convert->setEnabled(true); break;
-        case QProcess::Starting: ui->pb_download->setText("Stop download"); ui->pb_select_file_to_convert->setEnabled(false); break;
-        case QProcess::Running: ui->pb_download->setText("Stop download"); ui->pb_select_file_to_convert->setEnabled(false); break;
+    if(s == QProcess::NotRunning)
+    {
+        ui->pb_download->setText("Paste and download");
+        ui->pb_select_file_to_convert->setEnabled(true);
     }
-}
-void PodKastik::do_ytdl()
-{
-    dl_link = clipboard->text();
-    if(dl_link.isEmpty()){QMessageBox::information(this, "Error", "Clipboard empty", QMessageBox::Ok); return;}
-    //dl_link = "https://www.youtube.com/watch?v=n4CjtoNoQ1Q";
-    if(!dl_link.contains("http"))dl_link.prepend("https://");
-    if(!urlExists(dl_link)){QMessageBox::information(this, "Error", "Invalid url: "+dl_link, QMessageBox::Ok); return;}
-    ui->pb_progress->setFormat("Downloading...");
-
-    youtube_dl->exe_process(dl_link);
+    else if(s == QProcess::Starting || s == QProcess::Running)
+    {
+        ui->pb_progress->setFormat("Downloading...");
+        ui->pb_download->setText("Stop download");
+        ui->pb_select_file_to_convert->setEnabled(false);
+    }
 }
 void PodKastik::ytdl_finished()
 {
@@ -194,8 +189,9 @@ void PodKastik::on_pb_download_clicked()
         ui->l_output->setText("Download stopped");
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
         return;
-    }else
-        do_ytdl();
+    }
+    else
+        youtube_dl->exe_process(clipboard->text());
 }
 void PodKastik::on_pb_select_file_to_convert_clicked()
 {
@@ -265,29 +261,6 @@ void PodKastik::tag_and_del()
 }
 void PodKastik::logging(QString str){ui->te_log->appendPlainText(str.trimmed());}
 void PodKastik::clip_paste(){ui->pb_download->setToolTip(clipboard->text());}
-bool PodKastik::urlExists(QString url_string)
-{
-    QUrl url(url_string);
-    QTextStream out(stdout);
-    QTcpSocket socket;
-    QByteArray buffer;
-    socket.connectToHost(url.host(), 80);
-    if(socket.waitForConnected()) {
-        socket.write("GET / HTTP/1.1\r\n""host: " + url.host().toUtf8() + "\r\n\r\n");
-        if(socket.waitForReadyRead()){
-            while(socket.bytesAvailable()){
-                buffer.append(socket.readAll());
-                int packetSize=buffer.size();
-                while(packetSize>0){
-                    if(buffer.contains("200 OK") || buffer.contains("302 Found") || buffer.contains("301 Moved")) return true;
-                    buffer.remove(0,packetSize);
-                    packetSize=buffer.size();
-                }
-            }
-        }
-    }return false;
-}
-
 void PodKastik::on_pb_about_clicked()
 {
     QMessageBox about_box(this);

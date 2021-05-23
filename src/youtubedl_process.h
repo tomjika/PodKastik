@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QRegularExpression>
 #include <QMessageBox>
+#include <QTcpSocket>
 
 class youtubedl_process : public QWidget
 {
@@ -23,6 +24,7 @@ private slots:
     void process_state_changed(QProcess::ProcessState);
     void process_error_state(QProcess::ProcessError);
     void process_finished(int, QProcess::ExitStatus);
+    bool urlExists(QString);
 
 public:
     QProcess *process;

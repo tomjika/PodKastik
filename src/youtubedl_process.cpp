@@ -21,6 +21,11 @@ youtubedl_process::~youtubedl_process()
 {}
 void youtubedl_process::exe_process(QString dl_link)
 {
+    if(dl_link.isEmpty()){QMessageBox::information(this, "Error", "Clipboard empty", QMessageBox::Ok); return;}
+    //dl_link = "https://www.youtube.com/watch?v=n4CjtoNoQ1Q";
+    if(!dl_link.contains("http"))dl_link.prepend("https://");
+    if(!urlExists(dl_link)){QMessageBox::information(this, "Error", "Invalid url: "+dl_link, QMessageBox::Ok); return;}
+
     QStringList args;
     if(audio_only) args<<"-x";//<<"--audio-format"<<"mp3"<<"--ffmpeg-location"<<"F:/Dropbox/A_Podcast/ffmpeg.exe"; not use because stucking the program
     if(!is_playlist)args<<"--playlist-items"<<"1";
@@ -76,3 +81,25 @@ void youtubedl_process::process_err()
 void youtubedl_process::process_error_state(QProcess::ProcessError err){ qDebug()<<"ytdl_err_state"<<err;}
 void youtubedl_process::process_state_changed(QProcess::ProcessState s){ emit process_state(s);}
 void youtubedl_process::process_finished(int code, QProcess::ExitStatus state){ qDebug()<<"ytdl_FINISHED"<<code<<state;}
+bool youtubedl_process::urlExists(QString url_string)
+{
+    QUrl url(url_string);
+    //QTextStream out(stdout);
+    QTcpSocket socket;
+    QByteArray buffer;
+    socket.connectToHost(url.host(), 80);
+    if(socket.waitForConnected()) {
+        socket.write("GET / HTTP/1.1\r\n""host: " + url.host().toUtf8() + "\r\n\r\n");
+        if(socket.waitForReadyRead()){
+            while(socket.bytesAvailable()){
+                buffer.append(socket.readAll());
+                int packetSize=buffer.size();
+                while(packetSize>0){
+                    if(buffer.contains("200 OK") || buffer.contains("302 Found") || buffer.contains("301 Moved")) return true;
+                    buffer.remove(0,packetSize);
+                    packetSize=buffer.size();
+                }
+            }
+        }
+    }return false;
+}

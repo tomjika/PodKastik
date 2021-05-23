@@ -35,7 +35,7 @@ private:
     QString output_path;
 
     QClipboard *clipboard;
-    QString dl_link;
+    //QString dl_link;
 
     QString default_folder;
     QString ytdl_folder;
@@ -53,7 +53,6 @@ private slots:
     void ytdl_process_out();
     void ytdl_state_changed(QProcess::ProcessState);
     void ytdl_finished();
-    void do_ytdl();
 
     void ffmpeg_process_out();
     void ffmpeg_state_changed(QProcess::ProcessState);
@@ -78,7 +77,6 @@ private slots:
     void on_cb_playlist_stateChanged(int arg1);
 
     void clip_paste();
-    bool urlExists(QString);
     void logging(QString);
     void tag_and_del();
     void on_pb_about_clicked();
