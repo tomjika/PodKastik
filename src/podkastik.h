@@ -55,7 +55,8 @@ private slots:
     void ytdl_finished();
 
     void ffmpeg_process_out();
-    void ffmpeg_state_changed(QProcess::ProcessState);
+    void ffmpeg_process_ready(bool);
+    void ffmpeg_process_running(bool);
     void ffmpeg_finished();
     void do_ffmpeg(QString);
 

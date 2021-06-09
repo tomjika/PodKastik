@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>300</width>
-    <height>400</height>
+    <height>435</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -211,7 +211,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>290</y>
+     <y>320</y>
      <width>280</width>
      <height>104</height>
     </rect>
@@ -226,7 +226,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>260</y>
+     <y>290</y>
      <width>281</width>
      <height>23</height>
     </rect>
@@ -242,7 +242,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>200</y>
+     <y>230</y>
      <width>281</width>
      <height>23</height>
     </rect>
@@ -296,7 +296,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>230</y>
+     <y>260</y>
      <width>281</width>
      <height>23</height>
     </rect>
@@ -305,7 +305,7 @@
     <string>Youtube-dl path</string>
    </property>
    <property name="text">
-    <string>FFmpeg Exe:</string>
+    <string/>
    </property>
   </widget>
   <widget class="QCheckBox" name="cb_playlist">
@@ -485,13 +485,36 @@
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>290</y>
+     <y>320</y>
      <width>60</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
     <string>About</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="le_prefix_format">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>200</y>
+     <width>241</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>200</y>
+     <width>31</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Prefix:</string>
    </property>
   </widget>
   <zorder>layoutWidget</zorder>
@@ -514,6 +537,8 @@
   <zorder>pb_select_file_to_convert</zorder>
   <zorder>pb_open_output_path</zorder>
   <zorder>pb_about</zorder>
+  <zorder>le_prefix_format</zorder>
+  <zorder>label_3</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

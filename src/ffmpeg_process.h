@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QFileDialog>
 #include <QRegularExpression>
+#include <QTimer>
 
 class ffmpeg_process : public QWidget
 {
@@ -15,6 +16,7 @@ public:
     explicit ffmpeg_process(QWidget *parent = nullptr, QString p = "");
     ~ffmpeg_process();
     void exe_process(QString);
+    void initialize_process();
 
 private slots:
     void process_out();
@@ -26,11 +28,15 @@ private slots:
 public:
     QProcess *process;
 
+    bool initializing = true;
+    QTimer* init_timer;
+
   //ffmpeg app
     QString version = "";
     bool use_portable = false;
     QString exe_path;
     bool available = false;
+    bool running = false;
 
   //process execution
     QString advance_status;
@@ -46,8 +52,8 @@ public:
     QString output_file_name;
 
 signals:
-    void process_ready();
-    void process_state(QProcess::ProcessState);
+    void process_ready(bool);
+    void process_running(bool);
     void conversion_finished();
     void log(QString);
     void process_out_update();

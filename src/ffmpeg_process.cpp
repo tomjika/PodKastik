@@ -11,14 +11,22 @@ ffmpeg_process::ffmpeg_process(QWidget *parent, QString p) :
         connect(process, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(process_error_state(QProcess::ProcessError)));
         connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(process_finished(int, QProcess::ExitStatus)));
 
+    init_timer = new QTimer(this);
+    init_timer->setSingleShot(true);
+    connect(init_timer, &QTimer::timeout, this, &ffmpeg_process::initialize_process);
+}
+ffmpeg_process::~ffmpeg_process()
+{}
+void ffmpeg_process::initialize_process()
+{
+    initializing = true;
+
     process->setProgram(QFile(exe_path).exists() ? exe_path : "ffmpeg");
     process->setArguments({"-version"});
 
     use_portable = QFile(exe_path).exists();
     process->start(QIODevice::ReadWrite);
 }
-ffmpeg_process::~ffmpeg_process()
-{}
 void ffmpeg_process::exe_process(QString file_name)
 {qDebug()<<"ffmpeg exe process"<<file_name;
     QStringList args;
@@ -48,7 +56,7 @@ void ffmpeg_process::process_out()
         version = out_str.remove(0, QString("ffmpeg version ").size());
         version.truncate(10);
         available = true;
-        emit process_ready();
+        emit process_ready(available);
     }
     else if(out_str.contains("out_time="))
     {
@@ -91,10 +99,26 @@ void ffmpeg_process::process_err()
     else if(out_str.contains("size=")){/*size=     806kB time=00:01:43.08 bitrate=  64.1kbits/s speed=41.1x*/}
     else emit log(out_str.trimmed());
 }
-void ffmpeg_process::process_error_state(QProcess::ProcessError err){ qDebug()<<"ffmpeg_err_state"<<err<<process->errorString();}
-void ffmpeg_process::process_state_changed(QProcess::ProcessState s){ emit process_state(s);}
+void ffmpeg_process::process_error_state(QProcess::ProcessError err)
+{qDebug()<<"ffmpeg_err_state"<<err<<process->errorString();
+    switch(err){
+        case QProcess::FailedToStart:
+            available = false;
+            emit process_ready(available);
+            init_timer->start(1000);
+        break;
+    }
+}
+void ffmpeg_process::process_state_changed(QProcess::ProcessState s)
+{qDebug()<<"ffmpeg state: "<<s;
+    switch(s){
+        case QProcess::NotRunning: running = false; break;
+        case QProcess::Starting: running = true; break;
+        case QProcess::Running: running = true; break;
+    }
+    emit process_running(running);
+}
 void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
-{
-    qDebug()<<"ffmpeg_FINISHED"<<code<<state;
+{qDebug()<<"ffmpeg_FINISHED"<<code<<state;
     if(conv_progress == 100) emit conversion_finished();
 }
