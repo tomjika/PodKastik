@@ -16,13 +16,13 @@ PodKastik::PodKastik(QWidget *parent) :
 
     QSettings my_settings("Studio1656", "PodKastik", this);
     ytdl_folder = my_settings.value("ytdl_folder").toString();
-    ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
     youtube_dl = new youtubedl_process(this, ytdl_folder);
-        connect(youtube_dl, SIGNAL(process_ready()), this, SLOT(loadSettings()));
+        connect(youtube_dl, SIGNAL(process_ready(bool)), this, SLOT(ytdl_process_ready(bool)));
+        connect(youtube_dl, SIGNAL(process_running(bool)), this, SLOT(ytdl_process_running(bool)));
         connect(youtube_dl, SIGNAL(process_out_update()), this, SLOT(ytdl_process_out()));
         connect(youtube_dl, SIGNAL(log(QString)), this, SLOT(logging(QString)));
-        connect(youtube_dl, SIGNAL(process_state(QProcess::ProcessState)), this, SLOT(ytdl_state_changed(QProcess::ProcessState)));
         connect(youtube_dl, SIGNAL(download_finished()), this, SLOT(ytdl_finished()));
+    youtube_dl->initialize_process();
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
     ffmpeg = new ffmpeg_process(this, ffmpeg_folder);
@@ -32,12 +32,23 @@ PodKastik::PodKastik(QWidget *parent) :
         connect(ffmpeg, SIGNAL(log(QString)), this, SLOT(logging(QString)));
         connect(ffmpeg, SIGNAL(conversion_finished()), this, SLOT(ffmpeg_finished()));
     ffmpeg->initialize_process();
+
+    loadSettings();
 }
 PodKastik::~PodKastik(){delete ui;}
 void PodKastik::dragEnterEvent(QDragEnterEvent *event)
 {
-    if(youtube_dl->process->state() == QProcess::NotRunning
-        && ffmpeg->process->state() == QProcess::NotRunning) event->accept();
+    const QMimeData* mimeData = event->mimeData();
+    qDebug()<<mimeData;
+    if(mimeData->hasUrls())
+    {
+        QList<QUrl> urlList = mimeData->urls();
+
+        if(urlList[0].isLocalFile() && ffmpeg->available && !ffmpeg->running)
+            event->accept();
+        else if(!urlList[0].isLocalFile() && youtube_dl->available && !youtube_dl->running)
+            event->accept();
+    }
 }
 void PodKastik::dropEvent(QDropEvent *event)
 {
@@ -49,9 +60,9 @@ void PodKastik::dropEvent(QDropEvent *event)
     {
         QList<QUrl> urlList = mimeData->urls();
 
-        if(urlList[0].isLocalFile())
+        if(urlList[0].isLocalFile() && ffmpeg->available && !ffmpeg->running)
             do_ffmpeg(urlList[0].toLocalFile());
-        else
+        else if(!urlList[0].isLocalFile() && youtube_dl->available && !youtube_dl->running)
             youtube_dl->exe_process(urlList[0].toString());
     }
 }
@@ -64,13 +75,6 @@ void PodKastik::loadSettings()
     youtube_dl->output_folder = output_path;
     ui->pb_browse_default->setText("Default: "+default_folder);
     ui->pb_browse->setText("Output path: "+default_folder);
-
-    /*if(youtube_dl->available)
-    {
-        ui->pb_browse_ytdl->setText(youtube_dl->use_portable ? "YT-dl Exe: "+ytdl_folder : "Youtube-dl is installed");
-        ui->pb_browse_ytdl->setToolTip("Version: "+youtube_dl->version);
-        ui->pb_download->setEnabled(youtube_dl->available);
-    }else ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");*/
 
     ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ui->dsb_tempo->setValue(ffmpeg->speed_tempo);
@@ -107,15 +111,28 @@ void PodKastik::ytdl_process_out()
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
     }
 }
-void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
+void PodKastik::ytdl_process_ready(bool isReady)
 {
-    if(s == QProcess::NotRunning)
+    ui->pb_download->setEnabled(youtube_dl->available);
+    if(isReady)
+    {
+        ui->pb_browse_ytdl->setText(youtube_dl->use_portable ? "YT-dl Exe: "+ytdl_folder : "Youtube-dl is installed");
+        ui->pb_browse_ytdl->setToolTip("Version: "+youtube_dl->version);
+    }else{
+        ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
+        ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
+        ui->pb_download->setToolTip("Youtube-dl not found, see Settings");
+        ui->pb_browse_ffmpeg->setToolTip("Click to go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme) or sudo -H pip install --upgrade youtube-dl (Ubuntu))");
+    }
+}
+void PodKastik::ytdl_process_running(bool isRunning)
+{qDebug()<<"ffmpeg_process_running";
+    if(!isRunning)
     {
         ui->pb_download->setText("Paste and download");
-        ui->pb_select_file_to_convert->setEnabled(true);
-    }
-    else if(s == QProcess::Starting || s == QProcess::Running)
-    {
+        if(ffmpeg->available) ui->pb_select_file_to_convert->setEnabled(true);
+    }else{
+        ffmpeg->init_timer->stop();
         ui->pb_progress->setFormat("Downloading...");
         ui->pb_download->setText("Stop download");
         ui->pb_select_file_to_convert->setEnabled(false);
@@ -123,14 +140,19 @@ void PodKastik::ytdl_state_changed(QProcess::ProcessState s)
 }
 void PodKastik::ytdl_finished()
 {
-    if(ui->cb_auto_convert->isEnabled() && ui->cb_auto_convert->isChecked()
-        && ffmpeg->process->state() == QProcess::NotRunning)
-            do_ffmpeg(youtube_dl->current_file_path_name);
+    qDebug()<<ffmpeg->available << !ffmpeg->running<< ui->cb_auto_convert->isEnabled() << ui->cb_auto_convert->isChecked();
+    if(ffmpeg->available && !ffmpeg->running
+      && ui->cb_auto_convert->isEnabled() && ui->cb_auto_convert->isChecked())
+    {        do_ffmpeg(youtube_dl->current_file_path_name);}
+    else if(youtube_dl->dl_progress == 100)
+    {
+        ui->pb_progress->setFormat("...");
+        ui->l_output->setText("Download finished!");
+        this->setWindowTitle("PodKastik | "+ui->l_output->text());
+    }
 }
 
-/******************************************************************************************/
 /*********************** FFmpeg ***********************************************************/
-/******************************************************************************************/
 void PodKastik::ffmpeg_process_out()
 {
     ui->l_output->setText(ffmpeg->advance_status);
@@ -151,12 +173,11 @@ void PodKastik::ffmpeg_process_ready(bool isReady)
     {
         ui->pb_browse_ffmpeg->setText(ffmpeg->use_portable ? "FFmpeg Exe: "+ffmpeg_folder : "FFmpeg is installed");
         ui->pb_browse_ffmpeg->setToolTip("Version: "+ffmpeg->version);
-        ui->pb_select_file_to_convert->setEnabled(ffmpeg->available);
-    }
-    else
-    {
+    }else{
+        ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
+        ui->pb_select_file_to_convert->setToolTip("FFmpeg not found, see Settings");
         ui->pb_browse_ffmpeg->setText("FFmpeg is not installed or .exe not found");
-        ui->pb_browse_ffmpeg->setToolTip("Click to go to website (https://ffmpeg.org/download.html)");
+        ui->pb_browse_ffmpeg->setToolTip("Click to go to website (https://ffmpeg.org/download.html) or sudo apt-get install ffmpeg (Ubuntu)");
     }
 }
 void PodKastik::ffmpeg_process_running(bool isRunning)
@@ -164,8 +185,9 @@ void PodKastik::ffmpeg_process_running(bool isRunning)
     if(!isRunning)
     {
         ui->pb_select_file_to_convert->setText("Select and convert");
-        ui->pb_download->setEnabled(true);
+        if(youtube_dl->available) ui->pb_download->setEnabled(true);
     }else{
+        youtube_dl->init_timer->stop();
         ui->pb_select_file_to_convert->setText("Stop convertion");
         ui->pb_download->setEnabled(false);
     }
@@ -228,7 +250,7 @@ void PodKastik::on_pb_browse_clicked()
 }
 void PodKastik::on_pb_browse_pressed(){ui->l_path->setFrameShadow(QFrame::Sunken);}
 void PodKastik::on_pb_browse_released(){ui->l_path->setFrameShadow(QFrame::Raised);}
-void PodKastik::on_pb_settings_clicked(){this->setFixedHeight(this->height()<200 ? 400 : 165);}
+void PodKastik::on_pb_settings_clicked(){this->setFixedHeight(this->height()<200 ? 440 : 165);}
 void PodKastik::on_pb_browse_default_clicked()
 {
     default_folder = QFileDialog::getExistingDirectory(this, "Default directory", default_folder, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
@@ -238,22 +260,31 @@ void PodKastik::on_pb_browse_default_clicked()
 }
 void PodKastik::on_pb_browse_ytdl_clicked()
 {
-    QString str = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)");
-    if(!str.isNull()) ytdl_folder = str;
-    ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
-    ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
-    saveSettings();
+    #ifdef __linux__
+    if(!youtube_dl->available) QDesktopServices::openUrl(QUrl("https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme"));
+    #elif _WIN32
+    if(!(ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)")).isNull())
+    {
+        //ytdl_folder = str;
+        ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
+        ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
+        saveSettings();
+    }
+    #endif
 }
 void PodKastik::on_pb_browse_ffmpeg_clicked()
 {qDebug()<<"ici";
-    if(ffmpeg->available)
+    #ifdef __linux__
+    if(!ffmpeg->available) QDesktopServices::openUrl(QUrl("https://ffmpeg.org/download.html"));
+    #elif _WIN32
+    if(!(ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)")).isNull())
     {
-        QString str = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)");
-        if(!str.isNull()) ffmpeg_folder = str;
+        //ffmpeg_folder = str;
         ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
         ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
         saveSettings();
-    }else  QDesktopServices::openUrl(QUrl("https://ffmpeg.org/download.html"));
+    }
+    #endif
 }
 void PodKastik::on_dsb_tempo_valueChanged(double arg1){ ffmpeg->speed_tempo = arg1; saveSettings();}
 void PodKastik::on_sb_kbits_valueChanged(double arg1){ ffmpeg->to_kbit = arg1; saveSettings();}

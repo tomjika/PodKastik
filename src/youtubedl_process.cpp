@@ -11,14 +11,20 @@ youtubedl_process::youtubedl_process(QWidget *parent, QString p) :
         connect(process, SIGNAL(errorOccurred(QProcess::ProcessError)), this, SLOT(process_error_state(QProcess::ProcessError)));
         connect(process, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(process_finished(int, QProcess::ExitStatus)));
 
+    init_timer = new QTimer(this);
+    init_timer->setSingleShot(true);
+    connect(init_timer, &QTimer::timeout, this, &youtubedl_process::initialize_process);
+}
+youtubedl_process::~youtubedl_process()
+{}
+void youtubedl_process::initialize_process()
+{
     process->setProgram(QFile(exe_path).exists() ? exe_path : "youtube-dl");
     process->setArguments({"--version"});
 
     use_portable = QFile(exe_path).exists();
     process->start(QIODevice::ReadWrite);
 }
-youtubedl_process::~youtubedl_process()
-{}
 void youtubedl_process::exe_process(QString dl_link)
 {
     if(dl_link.isEmpty()){QMessageBox::information(this, "Error", "Clipboard empty", QMessageBox::Ok); return;}
@@ -46,7 +52,7 @@ void youtubedl_process::process_out()
     {
         version = out_str;
         available = true;
-        emit process_ready();
+        emit process_ready(available);
     }
     else if(out_str.contains("[download]"))//[download]  37.4% of 2.67MiB at 844.71KiB/s ETA 00:02
     {
@@ -68,7 +74,7 @@ void youtubedl_process::process_out()
             dl_progress = out_str.left(out_str.indexOf("%")).toDouble(&ok);
         }
         emit process_out_update();
-        if(dl_progress == 100 && process->waitForFinished()) emit download_finished();
+        //if(dl_progress == 100 && process->waitForFinished()) emit download_finished();
     }else emit log(out_str.trimmed());
 }
 void youtubedl_process::process_err()
@@ -78,9 +84,29 @@ void youtubedl_process::process_err()
     emit log(out_str.trimmed());
     if(out_str.contains("ERROR:")) QMessageBox::information(this, "ERROR", out_str, QMessageBox::Ok);
 }
-void youtubedl_process::process_error_state(QProcess::ProcessError err){ qDebug()<<"ytdl_err_state"<<err;}
-void youtubedl_process::process_state_changed(QProcess::ProcessState s){ emit process_state(s);}
-void youtubedl_process::process_finished(int code, QProcess::ExitStatus state){ qDebug()<<"ytdl_FINISHED"<<code<<state;}
+void youtubedl_process::process_error_state(QProcess::ProcessError err)
+{qDebug()<<"ytdl_err_state"<<err;
+    switch(err){
+        case QProcess::FailedToStart:
+            available = false;
+            emit process_ready(available);
+            init_timer->start(1000);
+        break;
+    }
+}
+void youtubedl_process::process_state_changed(QProcess::ProcessState s)
+{
+    switch(s){
+        case QProcess::NotRunning: running = false; break;
+        case QProcess::Starting: running = true; break;
+        case QProcess::Running: running = true; break;
+    }
+    if(available) emit process_running(running);
+}
+void youtubedl_process::process_finished(int code, QProcess::ExitStatus state)
+{
+    qDebug()<<"ytdl_FINISHED"<<code<<state;emit download_finished();
+}
 bool youtubedl_process::urlExists(QString url_string)
 {
     QUrl url(url_string);

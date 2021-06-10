@@ -51,7 +51,8 @@ private slots:
     void saveSettings();
 
     void ytdl_process_out();
-    void ytdl_state_changed(QProcess::ProcessState);
+    void ytdl_process_ready(bool);
+    void ytdl_process_running(bool);
     void ytdl_finished();
 
     void ffmpeg_process_out();

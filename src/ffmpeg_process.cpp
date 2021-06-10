@@ -19,8 +19,6 @@ ffmpeg_process::~ffmpeg_process()
 {}
 void ffmpeg_process::initialize_process()
 {
-    initializing = true;
-
     process->setProgram(QFile(exe_path).exists() ? exe_path : "ffmpeg");
     process->setArguments({"-version"});
 
@@ -116,7 +114,7 @@ void ffmpeg_process::process_state_changed(QProcess::ProcessState s)
         case QProcess::Starting: running = true; break;
         case QProcess::Running: running = true; break;
     }
-    emit process_running(running);
+    if(available) emit process_running(running);
 }
 void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ffmpeg_FINISHED"<<code<<state;

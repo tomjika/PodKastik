@@ -27,14 +27,12 @@ private slots:
 
 public:
     QProcess *process;
-
-    bool initializing = true;
     QTimer* init_timer;
 
   //ffmpeg app
+    QString exe_path;
     QString version = "";
     bool use_portable = false;
-    QString exe_path;
     bool available = false;
     bool running = false;
 

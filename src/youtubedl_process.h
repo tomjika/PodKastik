@@ -8,6 +8,7 @@
 #include <QRegularExpression>
 #include <QMessageBox>
 #include <QTcpSocket>
+#include <QTimer>
 
 class youtubedl_process : public QWidget
 {
@@ -17,6 +18,7 @@ public:
     explicit youtubedl_process(QWidget *parent = nullptr, QString p = "");
     ~youtubedl_process();
     void exe_process(QString);
+    void initialize_process();
 
 private slots:
     void process_out();
@@ -28,12 +30,14 @@ private slots:
 
 public:
     QProcess *process;
+    QTimer* init_timer;
 
   //youtube-dl app
+    QString exe_path;
     QString version = "";
     bool use_portable = false;
-    QString exe_path;
     bool available = false;
+    bool running = false;
 
   //process execution
     QString current_file_path_name;
@@ -47,8 +51,8 @@ public:
     QString output_folder;
 
 signals:
-    void process_ready();
-    void process_state(QProcess::ProcessState);
+    void process_ready(bool);
+    void process_running(bool);
     void download_finished();
     void log(QString);
     void process_out_update();

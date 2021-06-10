@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>300</width>
-    <height>435</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -182,7 +182,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Download and Convert</string>
+    <string>Paste and download</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pb_browse">
@@ -251,7 +251,7 @@
     <string>Youtube-dl path</string>
    </property>
    <property name="text">
-    <string>YT-dl Exe:</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="l_current_file_name">
