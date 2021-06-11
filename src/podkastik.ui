@@ -251,7 +251,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string/>
+    <string>Click to select ffmpeg.exe to use</string>
    </property>
    <property name="text">
     <string/>
@@ -305,7 +305,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string/>
+    <string>Click to select youtube-dl.exe to use</string>
    </property>
    <property name="text">
     <string/>

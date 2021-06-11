@@ -121,8 +121,11 @@ void PodKastik::ytdl_process_ready(bool isReady)
     }else{
         ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
         ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
-        ui->pb_download->setToolTip("Youtube-dl not found, see Settings");
-        ui->pb_download->setToolTip("Click to go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme) or sudo -H pip install --upgrade youtube-dl (Ubuntu))");
+    #ifdef __linux__
+        ui->pb_browse_ytdl->setToolTip("Click to go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme) or sudo -H pip install --upgrade youtube-dl (Ubuntu))");
+    #elif _WIN32
+        ui->pb_browse_ytdl->setToolTip("Click to select youtube-dl.exe to use or go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme)");
+    #endif
     }
 }
 void PodKastik::ytdl_process_running(bool isRunning)
@@ -177,7 +180,11 @@ void PodKastik::ffmpeg_process_ready(bool isReady)
         ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
         ui->pb_select_file_to_convert->setToolTip("FFmpeg not found, see Settings");
         ui->pb_browse_ffmpeg->setText("FFmpeg is not installed or .exe not found");
+    #ifdef __linux__
         ui->pb_browse_ffmpeg->setToolTip("Click to go to website (https://ffmpeg.org/download.html) or sudo apt-get install ffmpeg (Ubuntu)");
+    #elif _WIN32
+        ui->pb_browse_ffmpeg->setToolTip("Click to select ffmpeg.exe to use or go to website (https://ffmpeg.org/download.html)");
+    #endif
     }
 }
 void PodKastik::ffmpeg_process_running(bool isRunning)
@@ -265,10 +272,10 @@ void PodKastik::on_pb_browse_ytdl_clicked()
     #elif _WIN32
     if(!(ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)")).isNull())
     {
-        //ytdl_folder = str;
-        ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
-        ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
         saveSettings();
+        ui->pb_browse_ytdl->setText("YT-dl Exe: "+ytdl_folder);
+        //ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
+        youtube_dl->initialize_process();
     }
     #endif
 }
@@ -279,10 +286,10 @@ void PodKastik::on_pb_browse_ffmpeg_clicked()
     #elif _WIN32
     if(!(ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)")).isNull())
     {
-        //ffmpeg_folder = str;
-        ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
-        ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
         saveSettings();
+        ui->pb_browse_ffmpeg->setText("FFmpeg Exe: "+ffmpeg_folder);
+        //ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
+        ffmpeg->initialize_process();
     }
     #endif
 }
