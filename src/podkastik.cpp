@@ -122,7 +122,7 @@ void PodKastik::ytdl_process_ready(bool isReady)
         ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
         ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
         ui->pb_download->setToolTip("Youtube-dl not found, see Settings");
-        ui->pb_browse_ffmpeg->setToolTip("Click to go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme) or sudo -H pip install --upgrade youtube-dl (Ubuntu))");
+        ui->pb_download->setToolTip("Click to go to website (https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme) or sudo -H pip install --upgrade youtube-dl (Ubuntu))");
     }
 }
 void PodKastik::ytdl_process_running(bool isRunning)

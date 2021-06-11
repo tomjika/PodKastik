@@ -200,6 +200,9 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="toolTip">
+    <string>Click to choose output folder</string>
+   </property>
    <property name="styleSheet">
     <string notr="true">border: none</string>
    </property>
@@ -232,7 +235,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>Default folder path</string>
+    <string>Click to choose default output folder</string>
    </property>
    <property name="text">
     <string>Default:</string>
@@ -248,7 +251,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>Youtube-dl path</string>
+    <string/>
    </property>
    <property name="text">
     <string/>
@@ -302,7 +305,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>Youtube-dl path</string>
+    <string/>
    </property>
    <property name="text">
     <string/>
