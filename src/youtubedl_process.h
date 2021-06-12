@@ -40,7 +40,7 @@ public:
     bool running = false;
 
   //process execution
-    QString current_file_path_name;
+    QString current_file_path_name = "";
     QString current_file_name;
     QString advance_status;
     double dl_progress;

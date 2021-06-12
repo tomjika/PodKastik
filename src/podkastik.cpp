@@ -143,16 +143,15 @@ void PodKastik::ytdl_process_running(bool isRunning)
 }
 void PodKastik::ytdl_finished()
 {
-    qDebug()<<ffmpeg->available << !ffmpeg->running<< ui->cb_auto_convert->isEnabled() << ui->cb_auto_convert->isChecked();
-    if(ffmpeg->available && !ffmpeg->running
-      && ui->cb_auto_convert->isEnabled() && ui->cb_auto_convert->isChecked())
-    {        do_ffmpeg(youtube_dl->current_file_path_name);}
-    else if(youtube_dl->dl_progress == 100)
+    if(youtube_dl->dl_progress =! 100) return;
+    if(!ffmpeg->available || !ui->cb_auto_convert->isEnabled() || !ui->cb_auto_convert->isChecked())
     {
         ui->pb_progress->setFormat("...");
         ui->l_output->setText("Download finished!");
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
     }
+    else if(!youtube_dl->current_file_path_name.isEmpty())
+        do_ffmpeg(youtube_dl->current_file_path_name);
 }
 
 /*********************** FFmpeg ***********************************************************/
@@ -207,6 +206,7 @@ void PodKastik::do_ffmpeg(QString file_path_name)
     output_file_name = file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
     ui->l_current_file_name->setText(output_file_name);
+    ui->l_current_file_name->setToolTip(output_file_name);
     ffmpeg->output_file_name = output_file_name;
 
     ffmpeg->exe_process(file_path_name);
@@ -267,9 +267,9 @@ void PodKastik::on_pb_browse_default_clicked()
 }
 void PodKastik::on_pb_browse_ytdl_clicked()
 {
-    #ifdef __linux__
+   #ifdef __linux__
     if(!youtube_dl->available) QDesktopServices::openUrl(QUrl("https://github.com/ytdl-org/youtube-dl/blob/master/README.md#readme"));
-    #elif _WIN32
+   #elif _WIN32
     if(!(ytdl_folder = QFileDialog::getOpenFileName(this, "Youtube-dl directory", ytdl_folder, "youtube-dl (*.exe)")).isNull())
     {
         saveSettings();
@@ -277,13 +277,13 @@ void PodKastik::on_pb_browse_ytdl_clicked()
         //ui->pb_browse_ytdl->setToolTip(ui->pb_browse_ytdl->text());
         youtube_dl->initialize_process();
     }
-    #endif
+   #endif
 }
 void PodKastik::on_pb_browse_ffmpeg_clicked()
-{qDebug()<<"ici";
-    #ifdef __linux__
+{
+   #ifdef __linux__
     if(!ffmpeg->available) QDesktopServices::openUrl(QUrl("https://ffmpeg.org/download.html"));
-    #elif _WIN32
+   #elif _WIN32
     if(!(ffmpeg_folder = QFileDialog::getOpenFileName(this, "ffmpeg directory", ffmpeg_folder, "ffmpeg (*.exe)")).isNull())
     {
         saveSettings();
@@ -291,7 +291,7 @@ void PodKastik::on_pb_browse_ffmpeg_clicked()
         //ui->pb_browse_ffmpeg->setToolTip(ui->pb_browse_ffmpeg->text());
         ffmpeg->initialize_process();
     }
-    #endif
+   #endif
 }
 void PodKastik::on_dsb_tempo_valueChanged(double arg1){ ffmpeg->speed_tempo = arg1; saveSettings();}
 void PodKastik::on_sb_kbits_valueChanged(double arg1){ ffmpeg->to_kbit = arg1; saveSettings();}
