@@ -62,7 +62,8 @@ void ffmpeg_process::process_out()
         QStringList dur_list = dur_str.left(dur_str.indexOf(" dup_frames")).split(sep);
         QTime duration(dur_list[0].toInt(), dur_list[1].toInt(), dur_list[2].toInt(), dur_list[3].toInt()/1000);
         current_ms_ffmpeg = QTime(0,0,0,0).msecsTo(duration);
-        conv_progress = 100.0*(double)current_ms_ffmpeg/(total_target_ms!=0 ? (double)total_target_ms : 1.0);
+        conv_progress = 100.0*(double)current_ms_ffmpeg;
+        conv_progress = conv_progress/(total_target_ms!=0 ? (double)total_target_ms : 1.0);//not working on linux in one line
 
         QString speed_factor = out_str.right(out_str.count()-out_str.indexOf("speed=")-6).simplified();
         speed_factor.truncate(speed_factor.indexOf("x"));
@@ -118,5 +119,6 @@ void ffmpeg_process::process_state_changed(QProcess::ProcessState s)
 }
 void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ffmpeg_FINISHED"<<code<<state;
-    if(conv_progress == 100) emit conversion_finished();
+    if(conv_progress >= 100)
+        emit conversion_finished();
 }

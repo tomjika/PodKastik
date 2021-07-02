@@ -161,8 +161,7 @@ void PodKastik::ffmpeg_process_out()
     ui->pb_progress->setValue(ffmpeg->conv_progress);
     this->setWindowTitle("PodKastik | C: "+QString::number(ffmpeg->conv_progress,'f',2)+"%");
 
-    if(ffmpeg->conv_progress == 100)
-    {
+    if(ffmpeg->conv_progress == 100){
         ui->pb_progress->setFormat("...");
         ui->l_output->setText("Conversion finished!");
         this->setWindowTitle("Conversion | "+ui->l_output->text());
@@ -309,7 +308,10 @@ void PodKastik::tag_and_del()
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
     new_name.insert(start_name+1, "("+QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString("hh_mm_ss")+") ");
     bool rn = QFile::rename(output_file_name, new_name);
-    if(!rm || !rn)QMessageBox::warning(this, "Problem at end", rm ? "Can't remove old file\n" : "" + rm ? "Can't rename new file" : "" );
+    QString err_str = "";
+    err_str += rm ? "" : "Can't remove old file\n";
+    err_str += rn ? "" : "Can't rename new file";
+    if(!rm || !rn) QMessageBox::warning(this, "Problem at end", err_str);
 }
 void PodKastik::logging(QString str){ui->te_log->appendPlainText(str.trimmed());}
 void PodKastik::clip_paste(){ui->pb_download->setToolTip(clipboard->text());}
