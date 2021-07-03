@@ -129,7 +129,7 @@ void PodKastik::ytdl_process_ready(bool isReady)
     }
 }
 void PodKastik::ytdl_process_running(bool isRunning)
-{qDebug()<<"ffmpeg_process_running";
+{qDebug()<<"ytdl_process_running";
     if(!isRunning)
     {
         ui->pb_download->setText("Paste and download");
