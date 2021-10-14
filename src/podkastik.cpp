@@ -306,7 +306,8 @@ void PodKastik::tag_and_del()
     bool rm = QFile::remove(youtube_dl->current_file_path_name);
     QString new_name = output_file_name;
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
-    new_name.insert(start_name+1, "("+QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString("hh_mm_ss")+") ");
+    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString("h.mm");
+    new_name.insert(start_name+1, "("+ time_txt +") ");
     bool rn = QFile::rename(output_file_name, new_name);
     QString err_str = "";
     err_str += rm ? "" : "Can't remove old file\n";
