@@ -1,7 +1,7 @@
 # PodKastik
 **A little application to easily download, speed up, stereo-to-mono, compress and resample podcasts !**
 
-**For podcast consumers who needs them in faster, louder, lighter to listen on old devices.**
+**For podcast consumers who needs them faster, louder, lighter to listen on old devices.**
 
 *A Qt C++ app using [youtube-dl](https://github.com/ytdl-org/youtube-dl/blob/master/README.md#options) and [FFmpeg](https://ffmpeg.org/documentation.html)* (.exe required), for Windows (hopefully not for long)
 
