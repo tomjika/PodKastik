@@ -119,6 +119,6 @@ void ffmpeg_process::process_state_changed(QProcess::ProcessState s)
 }
 void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ffmpeg_FINISHED"<<code<<state<<"conv prog "<<conv_progress;
-    if(conv_progress >= 99.999)
+    if(conv_progress >= 99.9)
         emit conversion_finished();
 }

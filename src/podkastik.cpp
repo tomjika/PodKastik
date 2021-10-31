@@ -6,7 +6,6 @@ PodKastik::PodKastik(QWidget *parent) :
     ui(new Ui::PodKastik)
 {
     ui->setupUi(this);
-    this->setFixedHeight(165);
 
     setAcceptDrops(true);
 
@@ -32,10 +31,10 @@ PodKastik::PodKastik(QWidget *parent) :
         connect(ffmpeg, SIGNAL(log(QString)), this, SLOT(logging(QString)));
         connect(ffmpeg, SIGNAL(conversion_finished()), this, SLOT(ffmpeg_finished()));
     ffmpeg->initialize_process();
-
-    loadSettings();
 }
+
 PodKastik::~PodKastik(){delete ui;}
+
 void PodKastik::dragEnterEvent(QDragEnterEvent *event)
 {
     const QMimeData* mimeData = event->mimeData();
@@ -50,6 +49,7 @@ void PodKastik::dragEnterEvent(QDragEnterEvent *event)
             event->accept();
     }
 }
+
 void PodKastik::dropEvent(QDropEvent *event)
 {
     event->accept();
@@ -66,15 +66,19 @@ void PodKastik::dropEvent(QDropEvent *event)
             youtube_dl->exe_process(urlList[0].toString());
     }
 }
+
 void PodKastik::loadSettings()
 {bool ok;
+    ui->settingsWidget->setHidden(true);
+    this->setFixedHeight(this->height() - ui->settingsWidget->height());
+
     QSettings my_settings("Studio1656", "PodKastik", this);
 
     default_folder = my_settings.value("default_folder").toString();
     output_path = default_folder;
     youtube_dl->output_folder = output_path;
-    ui->pb_browse_default->setText("Default: "+default_folder);
-    ui->pb_browse->setText("Output path: "+default_folder);
+    SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
+    SetTextToLabel(ui->l_path, output_path, Qt::ElideMiddle);
 
     ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ui->dsb_tempo->setValue(ffmpeg->speed_tempo);
@@ -84,12 +88,17 @@ void PodKastik::loadSettings()
 
     ffmpeg->to_kbit = my_settings.value("kbit").toDouble(&ok);
     ui->sb_kbits->setValue(ffmpeg->to_kbit);
+
+    default_format = my_settings.value("default_format").toString();
+    ui->le_prefix_format->setText(default_format);
 }
+
 void PodKastik::saveSettings()
 {
     QSettings my_settings("Studio1656", "PodKastik", this);
     my_settings.setValue("default_folder", default_folder);
     my_settings.setValue("ytdl_folder", ytdl_folder);
+    my_settings.setValue("default_format", default_format);
     my_settings.setValue("ffmpeg_folder", ffmpeg_folder);
     my_settings.setValue("speed_tempo", ffmpeg->speed_tempo);
     my_settings.setValue("stereo_to_mono", ffmpeg->stereo_to_mono);
@@ -99,7 +108,7 @@ void PodKastik::saveSettings()
 /*********************** YOUTUBE-DL********************************************************/
 void PodKastik::ytdl_process_out()
 {
-    ui->l_current_file_name->setText(youtube_dl->current_file_name);
+    SetTextToLabel(ui->l_current_file_name, youtube_dl->current_file_name, Qt::ElideMiddle);
     ui->l_output->setText(youtube_dl->advance_status);
     ui->pb_progress->setValue(youtube_dl->dl_progress);
     this->setWindowTitle("PodKastik | DL: "+QString::number(youtube_dl->dl_progress)+"%");
@@ -111,6 +120,7 @@ void PodKastik::ytdl_process_out()
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
     }
 }
+
 void PodKastik::ytdl_process_ready(bool isReady)
 {
     ui->pb_download->setEnabled(youtube_dl->available);
@@ -128,6 +138,7 @@ void PodKastik::ytdl_process_ready(bool isReady)
     #endif
     }
 }
+
 void PodKastik::ytdl_process_running(bool isRunning)
 {qDebug()<<"ytdl_process_running";
     if(!isRunning)
@@ -141,9 +152,10 @@ void PodKastik::ytdl_process_running(bool isRunning)
         ui->pb_select_file_to_convert->setEnabled(false);
     }
 }
+
 void PodKastik::ytdl_finished()
 {
-    if(youtube_dl->dl_progress =! 100) return;
+    if((youtube_dl->dl_progress =! 100)) { return;}
     if(!ffmpeg->available || !ui->cb_auto_convert->isEnabled() || !ui->cb_auto_convert->isChecked())
     {
         ui->pb_progress->setFormat("...");
@@ -167,6 +179,7 @@ void PodKastik::ffmpeg_process_out()
         this->setWindowTitle("Conversion | "+ui->l_output->text());
     }
 }
+
 void PodKastik::ffmpeg_process_ready(bool isReady)
 {qDebug()<<"ffmpeg_process_ready";
     ui->pb_select_file_to_convert->setEnabled(ffmpeg->available);
@@ -185,6 +198,7 @@ void PodKastik::ffmpeg_process_ready(bool isReady)
     #endif
     }
 }
+
 void PodKastik::ffmpeg_process_running(bool isRunning)
 {qDebug()<<"ffmpeg_process_running";
     if(!isRunning)
@@ -197,6 +211,7 @@ void PodKastik::ffmpeg_process_running(bool isRunning)
         ui->pb_download->setEnabled(false);
     }
 }
+
 void PodKastik::do_ffmpeg(QString file_path_name)
 {//sox -S -t mp3 -b 64 "$i" ./$fn2"X.mp3" channels 1 tempo $tmpo (S: show progress, t: filetype, -b: bitrate,
     ui->pb_progress->setFormat("Converting...");
@@ -204,12 +219,12 @@ void PodKastik::do_ffmpeg(QString file_path_name)
 
     output_file_name = file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
-    ui->l_current_file_name->setText(output_file_name);
-    ui->l_current_file_name->setToolTip(output_file_name);
+    SetTextToLabel(ui->l_current_file_name, output_file_name, Qt::ElideLeft);
     ffmpeg->output_file_name = output_file_name;
 
     ffmpeg->exe_process(file_path_name);
 }
+
 void PodKastik::ffmpeg_finished()
 {qDebug()<<"ffmpeg_finished";
     tag_and_del();
@@ -232,6 +247,7 @@ void PodKastik::on_pb_download_clicked()
     else
         youtube_dl->exe_process(clipboard->text());
 }
+
 void PodKastik::on_pb_select_file_to_convert_clicked()
 {
     if(ffmpeg->process->state() != QProcess::NotRunning) //stop conversion
@@ -247,23 +263,35 @@ void PodKastik::on_pb_select_file_to_convert_clicked()
         if(!str.isEmpty()) do_ffmpeg(str);
     }
 }
+
 void PodKastik::on_pb_browse_clicked()
 {
     QString p = QFileDialog::getExistingDirectory(this, "Output directory", output_path, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     output_path = p.isEmpty() ? output_path : p;
-    ui->pb_browse->setText("Output path: "+output_path);
+    SetTextToLabel(ui->l_path, output_path, Qt::ElideMiddle);
     youtube_dl->output_folder = output_path;
 }
-void PodKastik::on_pb_browse_pressed(){ui->l_path->setFrameShadow(QFrame::Sunken);}
-void PodKastik::on_pb_browse_released(){ui->l_path->setFrameShadow(QFrame::Raised);}
-void PodKastik::on_pb_settings_clicked(){this->setFixedHeight(this->height()<200 ? 440 : 165);}
+
+void PodKastik::on_pb_settings_clicked()
+{
+    bool settingsHidden = ui->settingsWidget->isHidden();
+    int settingsWidgetHeight = ui->settingsWidget->height();
+    ui->settingsWidget->setHidden(!settingsHidden);
+
+    if(settingsHidden)
+        this->setFixedHeight(this->height() + settingsWidgetHeight);
+    else
+        this->setFixedHeight(this->height() - settingsWidgetHeight);
+}
+
 void PodKastik::on_pb_browse_default_clicked()
 {
     default_folder = QFileDialog::getExistingDirectory(this, "Default directory", default_folder, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-    ui->pb_browse_default->setText("Default: "+default_folder);
+    SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
     ui->pb_browse_default->setToolTip(ui->pb_browse_default->text());
     saveSettings();
 }
+
 void PodKastik::on_pb_browse_ytdl_clicked()
 {
    #ifdef __linux__
@@ -278,6 +306,7 @@ void PodKastik::on_pb_browse_ytdl_clicked()
     }
    #endif
 }
+
 void PodKastik::on_pb_browse_ffmpeg_clicked()
 {
    #ifdef __linux__
@@ -292,13 +321,23 @@ void PodKastik::on_pb_browse_ffmpeg_clicked()
     }
    #endif
 }
+
 void PodKastik::on_dsb_tempo_valueChanged(double arg1){ ffmpeg->speed_tempo = arg1; saveSettings();}
+
 void PodKastik::on_sb_kbits_valueChanged(double arg1){ ffmpeg->to_kbit = arg1; saveSettings();}
+
 void PodKastik::on_cb_to_mono_stateChanged(int arg1){ ffmpeg->stereo_to_mono = arg1; saveSettings();}
+
 void PodKastik::on_rb_audio_toggled(bool checked){ youtube_dl->audio_only = checked;}
+
 void PodKastik::on_rb_video_toggled(bool checked){ ui->cb_auto_convert->setEnabled(!checked);}
+
 void PodKastik::on_cb_playlist_stateChanged(int arg1){ youtube_dl->is_playlist = arg1;}
+
 void PodKastik::on_pb_open_output_path_clicked(){ QDesktopServices::openUrl(QUrl::fromLocalFile(output_path));}
+
+void PodKastik::on_le_prefix_format_textChanged(const QString &arg1){ default_format = arg1; saveSettings();}
+
 
 /*********************** OTHERS ***********************************************************/
 void PodKastik::tag_and_del()
@@ -306,16 +345,19 @@ void PodKastik::tag_and_del()
     bool rm = QFile::remove(youtube_dl->current_file_path_name);
     QString new_name = output_file_name;
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
-    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString("h.mm");
-    new_name.insert(start_name+1, "("+ time_txt +") ");
+    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_format);
+    new_name.insert(start_name+1, time_txt);
     bool rn = QFile::rename(output_file_name, new_name);
     QString err_str = "";
     err_str += rm ? "" : "Can't remove old file\n";
     err_str += rn ? "" : "Can't rename new file";
     if(!rm || !rn) QMessageBox::warning(this, "Problem at end", err_str);
 }
+
 void PodKastik::logging(QString str){ui->te_log->appendPlainText(str.trimmed());}
+
 void PodKastik::clip_paste(){ui->pb_download->setToolTip(clipboard->text());}
+
 void PodKastik::on_pb_about_clicked()
 {
     QMessageBox about_box(this);
@@ -327,4 +369,22 @@ void PodKastik::on_pb_about_clicked()
                         "<a href='https://ffmpeg.org/download.html'>FFmpeg</a> are needed.<br><br>"
                         "<a href='https://github.com/tomjika/PodKastik'>PodKastik on Github!</a>");
     about_box.exec();
+}
+
+void PodKastik::SetTextToLabel(QLabel* label, QString text, Qt::TextElideMode elideMode)
+{
+    QFontMetrics metrix(label->font());
+    int width = label->width() - 2;
+    QString clippedText = metrix.elidedText(text, elideMode, width);
+    label->setText(clippedText);
+    label->setToolTip(text);
+}
+
+void PodKastik::SetTextToButton(QPushButton* button, QString text, Qt::TextElideMode elideMode)
+{
+    QFontMetrics metrix(button->font());
+    int width = button->width() - 2;
+    QString clippedText = metrix.elidedText(text, elideMode, width);
+    button->setText(clippedText);
+    button->setToolTip(text);
 }

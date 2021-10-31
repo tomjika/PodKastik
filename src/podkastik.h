@@ -25,6 +25,7 @@ public:
     ~PodKastik();
     void dragEnterEvent(QDragEnterEvent*);
     void dropEvent(QDropEvent*);
+    void loadSettings();
 
 private:
     Ui::PodKastik *ui;
@@ -40,6 +41,7 @@ private:
     QString default_folder;
     QString ytdl_folder;
     QString ffmpeg_folder;
+    QString default_format;
     QString current_file_name;
     QString output_file_name;
     QTime current_file_duration;
@@ -47,7 +49,6 @@ private:
     int current_ms_ffmpeg = 0;
 
 private slots:
-    void loadSettings();
     void saveSettings();
 
     void ytdl_process_out();
@@ -66,8 +67,6 @@ private slots:
     void on_pb_settings_clicked();
     void on_pb_browse_default_clicked();
     void on_pb_browse_ytdl_clicked();
-    void on_pb_browse_pressed();
-    void on_pb_browse_released();
     void on_pb_browse_ffmpeg_clicked();
     void on_dsb_tempo_valueChanged(double arg1);
     void on_cb_to_mono_stateChanged(int arg1);
@@ -82,6 +81,10 @@ private slots:
     void logging(QString);
     void tag_and_del();
     void on_pb_about_clicked();
+
+    void SetTextToLabel(QLabel*, QString, Qt::TextElideMode);
+    void SetTextToButton(QPushButton*, QString, Qt::TextElideMode);
+    void on_le_prefix_format_textChanged(const QString &arg1);
 };
 
 #endif // PODKASTIK_H

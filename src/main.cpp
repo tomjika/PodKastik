@@ -6,6 +6,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     PodKastik w;
     w.show();
+    w.loadSettings();
 
     return a.exec();
 }
