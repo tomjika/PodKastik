@@ -99,10 +99,16 @@
    <item>
     <widget class="QLabel" name="l_current_file_name">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>18</width>
+       <height>0</height>
+      </size>
      </property>
      <property name="maximumSize">
       <size>
