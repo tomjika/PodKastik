@@ -219,7 +219,7 @@ void PodKastik::do_ffmpeg(QString file_path_name)
 
     output_file_name = file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
-    SetTextToLabel(ui->l_current_file_name, output_file_name, Qt::ElideLeft);
+    SetTextToLabel(ui->l_current_file_name, output_file_name, Qt::ElideMiddle);
     ffmpeg->output_file_name = output_file_name;
 
     ffmpeg->exe_process(file_path_name);
