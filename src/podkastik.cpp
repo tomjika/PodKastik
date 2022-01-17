@@ -78,7 +78,7 @@ void PodKastik::loadSettings()
     output_path = default_folder;
     youtube_dl->output_folder = output_path;
     SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
-    SetTextToLabel(ui->l_path, output_path, Qt::ElideMiddle);
+    SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
 
     ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ui->dsb_tempo->setValue(ffmpeg->speed_tempo);
@@ -264,11 +264,11 @@ void PodKastik::on_pb_select_file_to_convert_clicked()
     }
 }
 
-void PodKastik::on_pb_browse_clicked()
+void PodKastik::on_pb_browse_output_clicked()
 {
     QString p = QFileDialog::getExistingDirectory(this, "Output directory", output_path, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     output_path = p.isEmpty() ? output_path : p;
-    SetTextToLabel(ui->l_path, output_path, Qt::ElideMiddle);
+    SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
     youtube_dl->output_folder = output_path;
 }
 
@@ -288,6 +288,7 @@ void PodKastik::on_pb_browse_default_clicked()
 {
     default_folder = QFileDialog::getExistingDirectory(this, "Default directory", default_folder, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
+    SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
     ui->pb_browse_default->setToolTip(ui->pb_browse_default->text());
     saveSettings();
 }

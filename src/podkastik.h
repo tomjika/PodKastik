@@ -63,7 +63,7 @@ private slots:
     void do_ffmpeg(QString);
 
     void on_pb_download_clicked();
-    void on_pb_browse_clicked();
+    void on_pb_browse_output_clicked();
     void on_pb_settings_clicked();
     void on_pb_browse_default_clicked();
     void on_pb_browse_ytdl_clicked();

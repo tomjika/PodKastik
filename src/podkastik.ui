@@ -33,12 +33,12 @@
     <number>1</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,20,1">
+    <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,1">
      <property name="spacing">
       <number>1</number>
      </property>
      <item>
-      <widget class="QPushButton" name="pb_browse">
+      <widget class="QPushButton" name="pb_browse_output">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -47,7 +47,7 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>50</width>
+         <width>16777215</width>
          <height>16777215</height>
         </size>
        </property>
@@ -59,19 +59,6 @@
        </property>
        <property name="text">
         <string>Output:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="l_path">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>TextLabel</string>
        </property>
       </widget>
      </item>
