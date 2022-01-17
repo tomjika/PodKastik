@@ -389,7 +389,7 @@
            <double>0.100000000000000</double>
           </property>
           <property name="value">
-           <double>1.300000000000000</double>
+           <double>1.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -418,7 +418,7 @@
            <double>16.000000000000000</double>
           </property>
           <property name="value">
-           <double>64.000000000000000</double>
+           <double>320.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -428,7 +428,10 @@
            <string>To mono</string>
           </property>
           <property name="checked">
-           <bool>true</bool>
+           <bool>false</bool>
+          </property>
+          <property name="tristate">
+           <bool>false</bool>
           </property>
          </widget>
         </item>

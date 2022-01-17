@@ -74,23 +74,22 @@ void PodKastik::loadSettings()
 
     QSettings my_settings("Studio1656", "PodKastik", this);
 
+
     default_folder = my_settings.value("default_folder").toString();
+    ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
+    ffmpeg->to_kbit = my_settings.value("kbit").toDouble(&ok);
+    ffmpeg->stereo_to_mono = my_settings.value("stereo_to_mono").toBool();
+    default_prefix = my_settings.value("default_prefix").toString();
+
     output_path = default_folder;
     youtube_dl->output_folder = output_path;
     SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
     SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
 
-    ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ui->dsb_tempo->setValue(ffmpeg->speed_tempo);
-
-    ffmpeg->stereo_to_mono = my_settings.value("stereo_to_mono").toBool();
     ui->cb_to_mono->setChecked(ffmpeg->stereo_to_mono);
-
-    ffmpeg->to_kbit = my_settings.value("kbit").toDouble(&ok);
     ui->sb_kbits->setValue(ffmpeg->to_kbit);
-
-    default_format = my_settings.value("default_format").toString();
-    ui->le_prefix_format->setText(default_format);
+    ui->le_prefix_format->setText(default_prefix);
 }
 
 void PodKastik::saveSettings()
@@ -98,7 +97,7 @@ void PodKastik::saveSettings()
     QSettings my_settings("Studio1656", "PodKastik", this);
     my_settings.setValue("default_folder", default_folder);
     my_settings.setValue("ytdl_folder", ytdl_folder);
-    my_settings.setValue("default_format", default_format);
+    my_settings.setValue("default_prefix", default_prefix);
     my_settings.setValue("ffmpeg_folder", ffmpeg_folder);
     my_settings.setValue("speed_tempo", ffmpeg->speed_tempo);
     my_settings.setValue("stereo_to_mono", ffmpeg->stereo_to_mono);
@@ -337,7 +336,7 @@ void PodKastik::on_cb_playlist_stateChanged(int arg1){ youtube_dl->is_playlist =
 
 void PodKastik::on_pb_open_output_path_clicked(){ QDesktopServices::openUrl(QUrl::fromLocalFile(output_path));}
 
-void PodKastik::on_le_prefix_format_textChanged(const QString &arg1){ default_format = arg1; saveSettings();}
+void PodKastik::on_le_prefix_format_textChanged(const QString &arg1){ default_prefix = arg1; saveSettings();}
 
 
 /*********************** OTHERS ***********************************************************/
@@ -346,7 +345,7 @@ void PodKastik::tag_and_del()
     bool rm = QFile::remove(youtube_dl->current_file_path_name);
     QString new_name = output_file_name;
     int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
-    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_format);
+    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_prefix);
     new_name.insert(start_name+1, time_txt);
     bool rn = QFile::rename(output_file_name, new_name);
     QString err_str = "";

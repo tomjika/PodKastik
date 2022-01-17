@@ -41,7 +41,7 @@ private:
     QString default_folder;
     QString ytdl_folder;
     QString ffmpeg_folder;
-    QString default_format;
+    QString default_prefix;
     QString current_file_name;
     QString output_file_name;
     QTime current_file_duration;
