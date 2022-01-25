@@ -19,6 +19,8 @@ ffmpeg_process::~ffmpeg_process()
 {}
 void ffmpeg_process::initialize_process()
 {
+    initializing = true;
+
     process->setProgram(QFile(exe_path).exists() ? exe_path : "ffmpeg");
     process->setArguments({"-version"});
 
@@ -121,4 +123,10 @@ void ffmpeg_process::process_finished(int code, QProcess::ExitStatus state)
 {qDebug()<<"ffmpeg_FINISHED"<<code<<state<<"conv prog "<<conv_progress;
     if(conv_progress >= 99.9)
         emit conversion_finished();
+
+    if(initializing)
+    {
+        emit conversion_finished();
+        initializing = false;
+    }
 }

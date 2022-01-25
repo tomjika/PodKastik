@@ -1,9 +1,10 @@
 #include "podkastik.h"
 #include "ui_podkastik.h"
 
-PodKastik::PodKastik(QWidget *parent) :
+PodKastik::PodKastik(QWidget *parent, QString outputPath) :
     QWidget(parent),
-    ui(new Ui::PodKastik)
+    ui(new Ui::PodKastik),
+    output_path(outputPath)
 {
     ui->setupUi(this);
 
@@ -74,14 +75,13 @@ void PodKastik::loadSettings()
 
     QSettings my_settings("Studio1656", "PodKastik", this);
 
-
     default_folder = my_settings.value("default_folder").toString();
     ffmpeg->speed_tempo = my_settings.value("speed_tempo").toDouble(&ok);
     ffmpeg->to_kbit = my_settings.value("kbit").toDouble(&ok);
     ffmpeg->stereo_to_mono = my_settings.value("stereo_to_mono").toBool();
     default_prefix = my_settings.value("default_prefix").toString();
 
-    output_path = default_folder;
+    if(output_path.isEmpty()) output_path = default_folder;
     youtube_dl->output_folder = output_path;
     SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
     SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
@@ -102,6 +102,11 @@ void PodKastik::saveSettings()
     my_settings.setValue("speed_tempo", ffmpeg->speed_tempo);
     my_settings.setValue("stereo_to_mono", ffmpeg->stereo_to_mono);
     my_settings.setValue("kbit", ffmpeg->to_kbit);
+}
+
+void PodKastik::addToConvertList(QString fileName)
+{
+    filesToConvert<<fileName;
 }
 
 /*********************** YOUTUBE-DL********************************************************/
@@ -213,6 +218,7 @@ void PodKastik::ffmpeg_process_running(bool isRunning)
 
 void PodKastik::do_ffmpeg(QString file_path_name)
 {//sox -S -t mp3 -b 64 "$i" ./$fn2"X.mp3" channels 1 tempo $tmpo (S: show progress, t: filetype, -b: bitrate,
+    qDebug()<<"do_ffmpeg"<<file_path_name;
     ui->pb_progress->setFormat("Converting...");
     ui->pb_progress->setValue(0);
 
@@ -226,9 +232,17 @@ void PodKastik::do_ffmpeg(QString file_path_name)
 
 void PodKastik::ffmpeg_finished()
 {qDebug()<<"ffmpeg_finished";
-    tag_and_del();
-    this->setWindowTitle("PodKastik | done!");
-    ui->pb_progress->setFormat("done!");
+    if(!ffmpeg->initializing)
+    {
+        tag_and_del();
+        this->setWindowTitle("PodKastik | done!");
+        ui->pb_progress->setFormat("done!");
+    }
+
+    if(!filesToConvert.isEmpty())
+    {
+        do_ffmpeg(filesToConvert.takeFirst());
+    }
 }
 
 /*********************** VIEW *************************************************************/
