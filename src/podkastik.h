@@ -21,7 +21,7 @@ class PodKastik : public QWidget
     Q_OBJECT
 
 public:
-    explicit PodKastik(QWidget *parent = nullptr);
+    explicit PodKastik(QWidget *parent = nullptr, QString outputPath = "");
     ~PodKastik();
     void dragEnterEvent(QDragEnterEvent*);
     void dropEvent(QDropEvent*);
@@ -47,6 +47,11 @@ private:
     QTime current_file_duration;
     int total_target_ms = 1;
     int current_ms_ffmpeg = 0;
+
+    QStringList filesToConvert;
+
+public slots:
+    void addToConvertList(QString);
 
 private slots:
     void saveSettings();

@@ -35,6 +35,7 @@ public:
     bool use_portable = false;
     bool available = false;
     bool running = false;
+    bool initializing = false;
 
   //process execution
     QString advance_status;
