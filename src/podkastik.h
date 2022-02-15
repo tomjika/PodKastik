@@ -85,6 +85,8 @@ private slots:
     void clip_paste();
     void logging(QString);
     void tag_and_del();
+    bool removeOldFile();
+    bool renameNewFile();
     void on_pb_about_clicked();
 
     void SetTextToLabel(QLabel*, QString, Qt::TextElideMode);
