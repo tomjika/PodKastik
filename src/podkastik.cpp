@@ -407,7 +407,6 @@ bool PodKastik::renameNewFile()
     QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_prefix);
     new_name.insert(start_name+1, time_txt);
 
-
     if(QFile::exists(new_name))
     {
         QMessageBox::StandardButton reply = QMessageBox::question(this, "Problem", "A file with the same name already exists."
@@ -419,7 +418,10 @@ bool PodKastik::renameNewFile()
         else
         {
             while(QFile::exists(new_name))
-                new_name = new_name.append("_new");
+            {
+                new_name.remove(".mp3");
+                new_name = new_name.append("_new.mp3");
+            }
         }
     }
 
