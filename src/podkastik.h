@@ -30,7 +30,7 @@ public:
 private:
     Ui::PodKastik *ui;
 
-    youtubedl_process *youtube_dl;
+    std::unique_ptr<youtubedl_process> youtube_dl;
     ffmpeg_process *ffmpeg;
 
     QString output_path;
@@ -48,6 +48,9 @@ private:
     int total_target_ms = 1;
     int current_ms_ffmpeg = 0;
 
+    bool ytdl_AudioOnly;
+    bool ytdl_IsPlaylist;
+
     QStringList filesToConvert;
 
 public slots:
@@ -56,6 +59,7 @@ public slots:
 private slots:
     void saveSettings();
 
+    void CreateYtdlProcess(QString exe_path);
     void ytdl_process_out();
     void ytdl_process_ready(bool);
     void ytdl_process_running(bool);
