@@ -32,6 +32,9 @@ void youtubedl_process::exe_process(QString dl_link)
     if(!dl_link.contains("http"))dl_link.prepend("https://");
     if(!urlExists(dl_link)){QMessageBox::information(this, "Error", "Invalid url: "+dl_link, QMessageBox::Ok); return;}
 
+    dl_progress = 0;
+    advance_status = "";
+
     QStringList args;
     if(audio_only) args<<"-x";//<<"--audio-format"<<"mp3"<<"--ffmpeg-location"<<"F:/Dropbox/A_Podcast/ffmpeg.exe"; not use because stucking the program
     if(!is_playlist)args<<"--playlist-items"<<"1";
@@ -75,7 +78,12 @@ void youtubedl_process::process_out()
         }
         emit process_out_update();
         //if(dl_progress == 100 && process->waitForFinished()) emit download_finished();
-    }else emit log(out_str.trimmed());
+    }
+    else
+    {
+        emit log(out_str.trimmed());
+        emit process_out_update();
+    }
 }
 void youtubedl_process::process_err()
 {

@@ -62,9 +62,15 @@ void PodKastik::dropEvent(QDropEvent *event)
         QList<QUrl> urlList = mimeData->urls();
 
         if(urlList[0].isLocalFile() && ffmpeg->available && !ffmpeg->running)
-            do_ffmpeg(urlList[0].toLocalFile());
+        {
+            current_file_name = urlList[0].toLocalFile();
+            do_ffmpeg(current_file_name);
+        }
         else if(!urlList[0].isLocalFile() && youtube_dl->available && !youtube_dl->running)
+        {
+            current_file_name = urlList[0].toLocalFile();
             youtube_dl->exe_process(urlList[0].toString());
+        }
     }
 }
 
@@ -117,7 +123,15 @@ void PodKastik::ytdl_process_out()
     ui->pb_progress->setValue(youtube_dl->dl_progress);
     this->setWindowTitle("PodKastik | DL: "+QString::number(youtube_dl->dl_progress)+"%");
 
-    if(youtube_dl->dl_progress == 100)
+    if(youtube_dl->dl_progress == 0)
+    {
+        ui->pb_progress->setFormat("Requesting download...");
+    }
+    else if(youtube_dl->dl_progress < 100)
+    {
+        ui->pb_progress->setFormat("Downloading...");
+    }
+    else if(youtube_dl->dl_progress == 100)
     {
         ui->pb_progress->setFormat("...");
         ui->l_output->setText("Download finished!");
@@ -151,7 +165,6 @@ void PodKastik::ytdl_process_running(bool isRunning)
         if(ffmpeg->available) ui->pb_select_file_to_convert->setEnabled(true);
     }else{
         ffmpeg->init_timer->stop();
-        ui->pb_progress->setFormat("Downloading...");
         ui->pb_download->setText("Stop download");
         ui->pb_select_file_to_convert->setEnabled(false);
     }
@@ -167,7 +180,10 @@ void PodKastik::ytdl_finished()
         this->setWindowTitle("PodKastik | "+ui->l_output->text());
     }
     else if(!youtube_dl->current_file_path_name.isEmpty())
+    {
+        current_file_name = youtube_dl->current_file_path_name;
         do_ffmpeg(youtube_dl->current_file_path_name);
+    }
 }
 
 /*********************** FFmpeg ***********************************************************/
@@ -225,6 +241,7 @@ void PodKastik::do_ffmpeg(QString file_path_name)
     output_file_name = file_path_name;
     output_file_name = output_file_name.left(output_file_name.lastIndexOf(".")).append("_eaready.mp3");
     SetTextToLabel(ui->l_current_file_name, output_file_name, Qt::ElideMiddle);
+
     ffmpeg->output_file_name = output_file_name;
 
     ffmpeg->exe_process(file_path_name);
@@ -273,7 +290,11 @@ void PodKastik::on_pb_select_file_to_convert_clicked()
         return;
     }else{
         QString str = QFileDialog::getOpenFileName(this, "Select file to convert", output_path);
-        if(!str.isEmpty()) do_ffmpeg(str);
+        if(!str.isEmpty())
+        {
+            current_file_name = str;
+            do_ffmpeg(current_file_name);
+        }
     }
 }
 
@@ -356,16 +377,56 @@ void PodKastik::on_le_prefix_format_textChanged(const QString &arg1){ default_pr
 /*********************** OTHERS ***********************************************************/
 void PodKastik::tag_and_del()
 {qDebug()<<"tag and del";
-    bool rm = QFile::remove(youtube_dl->current_file_path_name);
-    QString new_name = output_file_name;
-    int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
-    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_prefix);
-    new_name.insert(start_name+1, time_txt);
-    bool rn = QFile::rename(output_file_name, new_name);
+
+    bool rm = removeOldFile();
+
+    bool rn = renameNewFile();
+
     QString err_str = "";
     err_str += rm ? "" : "Can't remove old file\n";
     err_str += rn ? "" : "Can't rename new file";
     if(!rm || !rn) QMessageBox::warning(this, "Problem at end", err_str);
+}
+
+bool PodKastik::removeOldFile()
+{
+    QFile file(current_file_name);
+    file.open(QFile::ReadWrite);
+
+    bool rm = file.remove(); qDebug()<<file.errorString();
+    return rm;
+}
+
+bool PodKastik::renameNewFile()
+{
+    QFile file(output_file_name);
+    file.open(QFile::ReadWrite);
+
+    QString new_name = output_file_name;
+    int start_name = new_name.lastIndexOf("\\")==-1 ? new_name.lastIndexOf("/") : new_name.lastIndexOf("\\");
+    QString time_txt = QTime(0,0,0,0).addMSecs(ffmpeg->total_target_ms).toString(default_prefix);
+    new_name.insert(start_name+1, time_txt);
+
+    if(QFile::exists(new_name))
+    {
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "Problem", "A file with the same name already exists."
+                                                                                   "\nDo you want to replace it?"
+                                                                                   "\n\n(No will add '_new' to the new file name)");
+
+        if (reply == QMessageBox::Yes)
+            QFile(new_name).remove();
+        else
+        {
+            while(QFile::exists(new_name))
+            {
+                new_name.remove(".mp3");
+                new_name = new_name.append("_new.mp3");
+            }
+        }
+    }
+
+    bool rn = file.rename(new_name); qDebug()<<file.errorString();
+    return rn;
 }
 
 void PodKastik::logging(QString str){ui->te_log->appendPlainText(str.trimmed());}
