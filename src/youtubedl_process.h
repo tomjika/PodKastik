@@ -17,7 +17,7 @@ class youtubedl_process : public QWidget
 public:
     explicit youtubedl_process(QWidget *parent = nullptr, QString p = "");
     ~youtubedl_process();
-    void exe_process(QString);
+    void exe_process(QString dl_link, QString outputFolder, bool isPlaylist = false, bool audioOnly = true);
     void initialize_process();
 
 private slots:
@@ -46,9 +46,6 @@ public:
     double dl_progress;
 
   //arguments
-    bool audio_only = true;
-    bool is_playlist = false;
-    QString output_folder;
 
 signals:
     void process_ready(bool);

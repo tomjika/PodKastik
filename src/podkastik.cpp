@@ -4,7 +4,9 @@
 PodKastik::PodKastik(QWidget *parent, QString outputPath) :
     QWidget(parent),
     ui(new Ui::PodKastik),
-    output_path(outputPath)
+    output_path(outputPath),
+    ytdl_AudioOnly(true),
+    ytdl_IsPlaylist(false)
 {
     ui->setupUi(this);
 
@@ -16,12 +18,8 @@ PodKastik::PodKastik(QWidget *parent, QString outputPath) :
 
     QSettings my_settings("Studio1656", "PodKastik", this);
     ytdl_folder = my_settings.value("ytdl_folder").toString();
-    youtube_dl = new youtubedl_process(this, ytdl_folder);
-        connect(youtube_dl, SIGNAL(process_ready(bool)), this, SLOT(ytdl_process_ready(bool)));
-        connect(youtube_dl, SIGNAL(process_running(bool)), this, SLOT(ytdl_process_running(bool)));
-        connect(youtube_dl, SIGNAL(process_out_update()), this, SLOT(ytdl_process_out()));
-        connect(youtube_dl, SIGNAL(log(QString)), this, SLOT(logging(QString)));
-        connect(youtube_dl, SIGNAL(download_finished()), this, SLOT(ytdl_finished()));
+    CreateYtdlProcess(ytdl_folder);
+
     youtube_dl->initialize_process();
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
@@ -69,7 +67,8 @@ void PodKastik::dropEvent(QDropEvent *event)
         else if(!urlList[0].isLocalFile() && youtube_dl->available && !youtube_dl->running)
         {
             current_file_name = urlList[0].toLocalFile();
-            youtube_dl->exe_process(urlList[0].toString());
+            if(youtube_dl.get() == nullptr) CreateYtdlProcess(ytdl_folder);
+            youtube_dl->exe_process(urlList[0].toString(), output_path, ytdl_IsPlaylist, ytdl_AudioOnly);
         }
     }
 }
@@ -88,7 +87,6 @@ void PodKastik::loadSettings()
     default_prefix = my_settings.value("default_prefix").toString();
 
     if(output_path.isEmpty()) output_path = default_folder;
-    youtube_dl->output_folder = output_path;
     SetTextToButton(ui->pb_browse_default, "Default: "+default_folder, Qt::ElideMiddle);
     SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
 
@@ -116,6 +114,16 @@ void PodKastik::addToConvertList(QString fileName)
 }
 
 /*********************** YOUTUBE-DL********************************************************/
+void PodKastik::CreateYtdlProcess(QString exe_path)
+{
+    youtube_dl = std::make_unique<youtubedl_process>(this, exe_path);
+        connect(youtube_dl.get(), SIGNAL(process_ready(bool)), this, SLOT(ytdl_process_ready(bool)));
+        connect(youtube_dl.get(), SIGNAL(process_running(bool)), this, SLOT(ytdl_process_running(bool)));
+        connect(youtube_dl.get(), SIGNAL(process_out_update()), this, SLOT(ytdl_process_out()));
+        connect(youtube_dl.get(), SIGNAL(download_finished()), this, SLOT(ytdl_finished()));
+        connect(youtube_dl.get(), SIGNAL(log(QString)), this, SLOT(logging(QString)));
+}
+
 void PodKastik::ytdl_process_out()
 {
     SetTextToLabel(ui->l_current_file_name, youtube_dl->current_file_name, Qt::ElideMiddle);
@@ -146,6 +154,7 @@ void PodKastik::ytdl_process_ready(bool isReady)
     {
         ui->pb_browse_ytdl->setText(youtube_dl->use_portable ? "YT-dl Exe: "+ytdl_folder : "Youtube-dl is installed");
         ui->pb_browse_ytdl->setToolTip("Version: "+youtube_dl->version);
+        //youtube_dl.reset();
     }else{
         ui->l_output->setText("Youtube-dl or FFmpeg not found, see Settings");
         ui->pb_browse_ytdl->setText("Youtube-dl is not installed or .exe not found");
@@ -172,6 +181,7 @@ void PodKastik::ytdl_process_running(bool isRunning)
 
 void PodKastik::ytdl_finished()
 {
+    qDebug()<<"ytdl_finished";
     if((youtube_dl->dl_progress =! 100)) { return;}
     if(!ffmpeg->available || !ui->cb_auto_convert->isEnabled() || !ui->cb_auto_convert->isChecked())
     {
@@ -184,6 +194,8 @@ void PodKastik::ytdl_finished()
         current_file_name = youtube_dl->current_file_path_name;
         do_ffmpeg(youtube_dl->current_file_path_name);
     }
+
+    //youtube_dl.reset();
 }
 
 /*********************** FFmpeg ***********************************************************/
@@ -275,7 +287,8 @@ void PodKastik::on_pb_download_clicked()
         return;
     }
     else
-        youtube_dl->exe_process(clipboard->text());
+        if(youtube_dl.get() == nullptr) CreateYtdlProcess(ytdl_folder);
+        youtube_dl->exe_process(clipboard->text(), output_path, ytdl_IsPlaylist, ytdl_AudioOnly);
 }
 
 void PodKastik::on_pb_select_file_to_convert_clicked()
@@ -303,7 +316,6 @@ void PodKastik::on_pb_browse_output_clicked()
     QString p = QFileDialog::getExistingDirectory(this, "Output directory", output_path, QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     output_path = p.isEmpty() ? output_path : p;
     SetTextToButton(ui->pb_browse_output, "Output: "+output_path, Qt::ElideMiddle);
-    youtube_dl->output_folder = output_path;
 }
 
 void PodKastik::on_pb_settings_clicked()
@@ -363,11 +375,11 @@ void PodKastik::on_sb_kbits_valueChanged(double arg1){ ffmpeg->to_kbit = arg1; s
 
 void PodKastik::on_cb_to_mono_stateChanged(int arg1){ ffmpeg->stereo_to_mono = arg1; saveSettings();}
 
-void PodKastik::on_rb_audio_toggled(bool checked){ youtube_dl->audio_only = checked;}
+void PodKastik::on_rb_audio_toggled(bool checked){ ytdl_AudioOnly = checked;}
 
 void PodKastik::on_rb_video_toggled(bool checked){ ui->cb_auto_convert->setEnabled(!checked);}
 
-void PodKastik::on_cb_playlist_stateChanged(int arg1){ youtube_dl->is_playlist = arg1;}
+void PodKastik::on_cb_playlist_stateChanged(int arg1){ ytdl_IsPlaylist = arg1;}
 
 void PodKastik::on_pb_open_output_path_clicked(){ QDesktopServices::openUrl(QUrl::fromLocalFile(output_path));}
 
