@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>316</width>
-    <height>456</height>
+    <height>480</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -159,7 +159,6 @@
        <property name="font">
         <font>
          <pointsize>8</pointsize>
-         <weight>50</weight>
          <bold>false</bold>
         </font>
        </property>
@@ -204,7 +203,6 @@
        </property>
        <property name="font">
         <font>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -226,7 +224,6 @@
        </property>
        <property name="font">
         <font>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -296,7 +293,6 @@
        <property name="font">
         <font>
          <pointsize>10</pointsize>
-         <weight>50</weight>
          <bold>false</bold>
         </font>
        </property>
@@ -348,10 +344,7 @@
        <height>16777215</height>
       </size>
      </property>
-     <layout class="QVBoxLayout" name="settingsLayout">
-      <property name="spacing">
-       <number>2</number>
-      </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="Line" name="line">
         <property name="orientation">
@@ -424,6 +417,11 @@
         </item>
         <item>
          <widget class="QCheckBox" name="cb_to_mono">
+          <property name="font">
+           <font>
+            <pointsize>11</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>To mono</string>
           </property>
@@ -481,20 +479,39 @@ t	The timezone (for example &quot;CEST&quot;)</string>
        </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="pb_browse_ytdl">
-        <property name="maximumSize">
-         <size>
-          <width>284</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Click to select ffmpeg.exe to use</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="3,1">
+        <item>
+         <widget class="QPushButton" name="pb_browse_ytdl">
+          <property name="maximumSize">
+           <size>
+            <width>284</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Click to select ffmpeg.exe to use</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="cb_ytdl_patched">
+          <property name="font">
+           <font>
+            <pointsize>7</pointsize>
+           </font>
+          </property>
+          <property name="toolTip">
+           <string>Relaunch PodKastik needed</string>
+          </property>
+          <property name="text">
+           <string>ytdl-patched</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QPushButton" name="pb_browse_ffmpeg">

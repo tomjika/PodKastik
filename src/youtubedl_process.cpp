@@ -13,9 +13,10 @@ youtubedl_process::youtubedl_process(QWidget *parent, QString p) :
 
     use_portable = QFile(exe_path).exists();
 
+    //why is the use of this timer ?
     init_timer = new QTimer(this);
     init_timer->setSingleShot(true);
-    connect(init_timer, &QTimer::timeout, this, &youtubedl_process::initialize_process);
+    //connect(init_timer, &QTimer::timeout, this, &youtubedl_process::initialize_process);
 }
 
 youtubedl_process::~youtubedl_process()
@@ -23,11 +24,13 @@ youtubedl_process::~youtubedl_process()
     process->kill();
 }
 
-void youtubedl_process::initialize_process()
+void youtubedl_process::initialize_process(bool use_patched)
 {
-    process->setProgram(QFile(exe_path).exists() ? exe_path : "youtube-dl");
-    process->setArguments({"--version"});
+    QString ytdl_to_use = use_patched ? "ytdl-patched" : "youtube-dl";
 
+    process->setProgram(QFile(exe_path).exists() ? exe_path : ytdl_to_use);
+    process->setArguments({"--version"});
+    qDebug()<<process->program();
     process->start(QIODevice::ReadWrite);
 }
 

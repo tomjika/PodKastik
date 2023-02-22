@@ -50,6 +50,7 @@ private:
 
     bool ytdl_AudioOnly;
     bool ytdl_IsPlaylist;
+    bool ytdl_use_patched;
 
     QStringList filesToConvert;
 
@@ -85,6 +86,7 @@ private slots:
     void on_pb_open_output_path_clicked();
     void on_rb_audio_toggled(bool checked);
     void on_cb_playlist_stateChanged(int arg1);
+    void on_cb_ytdl_patched_stateChanged(int arg1);
 
     void clip_paste();
     void logging(QString);
@@ -96,6 +98,7 @@ private slots:
     void SetTextToLabel(QLabel*, QString, Qt::TextElideMode);
     void SetTextToButton(QPushButton*, QString, Qt::TextElideMode);
     void on_le_prefix_format_textChanged(const QString &arg1);
+
 };
 
 #endif // PODKASTIK_H
