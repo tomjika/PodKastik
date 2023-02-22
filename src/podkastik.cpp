@@ -19,8 +19,9 @@ PodKastik::PodKastik(QWidget *parent, QString outputPath) :
     QSettings my_settings("Studio1656", "PodKastik", this);
     ytdl_folder = my_settings.value("ytdl_folder").toString();
     CreateYtdlProcess(ytdl_folder);
+    ytdl_use_patched = my_settings.value("use_ytdl_patched").toBool();
 
-    youtube_dl->initialize_process();
+    youtube_dl->initialize_process(ytdl_use_patched);
 
     ffmpeg_folder = my_settings.value("ffmpeg_folder").toString();
     ffmpeg = new ffmpeg_process(this, ffmpeg_folder);
@@ -94,6 +95,7 @@ void PodKastik::loadSettings()
     ui->cb_to_mono->setChecked(ffmpeg->stereo_to_mono);
     ui->sb_kbits->setValue(ffmpeg->to_kbit);
     ui->le_prefix_format->setText(default_prefix);
+    ui->cb_ytdl_patched->setChecked(ytdl_use_patched);
 }
 
 void PodKastik::saveSettings()
@@ -106,6 +108,7 @@ void PodKastik::saveSettings()
     my_settings.setValue("speed_tempo", ffmpeg->speed_tempo);
     my_settings.setValue("stereo_to_mono", ffmpeg->stereo_to_mono);
     my_settings.setValue("kbit", ffmpeg->to_kbit);
+    my_settings.setValue("use_ytdl_patched", ytdl_use_patched);
 }
 
 void PodKastik::addToConvertList(QString fileName)
@@ -380,6 +383,8 @@ void PodKastik::on_rb_audio_toggled(bool checked){ ytdl_AudioOnly = checked;}
 void PodKastik::on_rb_video_toggled(bool checked){ ui->cb_auto_convert->setEnabled(!checked);}
 
 void PodKastik::on_cb_playlist_stateChanged(int arg1){ ytdl_IsPlaylist = arg1;}
+
+void PodKastik::on_cb_ytdl_patched_stateChanged(int arg1){ ytdl_use_patched = arg1; saveSettings();}
 
 void PodKastik::on_pb_open_output_path_clicked(){ QDesktopServices::openUrl(QUrl::fromLocalFile(output_path));}
 
